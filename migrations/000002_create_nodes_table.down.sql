@@ -1,1 +1,2 @@
 DROP TABLE IF EXISTS "Nodes";
+DROP TYPE IF EXISTS node_status;
