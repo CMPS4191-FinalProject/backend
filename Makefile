@@ -10,3 +10,7 @@ db/migrations/up:
 	@migrate -path ./migrations -database ${DB_DSN} up
 db/migrations/down:
 	@migrate -path ./migrations -database ${DB_DSN} down
+swagger/docs:
+	@echo "Generating Swagger documentation..."
+	@swag init -g ./cmd/api/main.go
+	

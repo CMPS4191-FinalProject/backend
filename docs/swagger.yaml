@@ -1,0 +1,294 @@
+basePath: /api/v1
+definitions:
+  main.AuthResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/main.AuthUser'
+    type: object
+  main.AuthUser:
+    properties:
+      user_id:
+        example: 1
+        type: integer
+      username:
+        example: john_doe
+        type: string
+    type: object
+  main.ErrorResponse:
+    properties:
+      error:
+        example: Invalid request
+        type: string
+      message:
+        example: Detailed error message
+        type: string
+    type: object
+  main.HealthCheck:
+    properties:
+      environment:
+        type: string
+      status:
+        type: string
+    type: object
+  main.LoginRequest:
+    properties:
+      password:
+        example: password123
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  main.UserResponse:
+    properties:
+      user_id:
+        example: 1
+        type: integer
+      username:
+        example: john_doe
+        type: string
+    type: object
+  types.User:
+    properties:
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  types.UserCreateRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A REST API for monitoring soil quality using IoT sensors
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Soil Quality Monitor API
+  version: "1.0"
+paths:
+  /auth/join:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/types.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and get JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/main.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: User login
+      tags:
+      - auth
+  /healthcheck:
+    get:
+      consumes:
+      - application/json
+      description: Get the health status of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthCheck'
+      summary: Health check endpoint
+      tags:
+      - health
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get list of users with pagination and sorting
+      parameters:
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      - description: Field to sort by
+        enum:
+        - user_id
+        - username
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.UserResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user (admin only)
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/types.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user by ID
+      tags:
+      - users
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

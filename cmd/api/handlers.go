@@ -15,6 +15,14 @@ type HealthCheck struct {
 	Environment string `json:"environment,omitempty"`
 }
 
+// HealthCheckHandler godoc
+// @Summary     Health check endpoint
+// @Description Get the health status of the API
+// @Tags        health
+// @Accept      json
+// @Produce     json
+// @Success     200 {object} HealthCheck
+// @Router      /healthcheck [get]
 func (c *serverConfig) HealthCheckHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	data := envelope{
 		"status": "alive",
@@ -30,6 +38,19 @@ func (c *serverConfig) HealthCheckHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// CreateUserHandler godoc
+// @Summary     Create a new user
+// @Description Create a new user (admin only)
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       user body types.User true "User data"
+// @Success     201 {object} UserResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /users [post]
 func (c *serverConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var user types.User
 	if err := c.readRequestJSON(w, r, &user); err != nil {
@@ -50,6 +71,21 @@ func (c *serverConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request,
 	json.NewEncoder(w).Encode(user)
 }
 
+// GetUsersHandler godoc
+// @Summary     Get all users
+// @Description Get list of users with pagination and sorting
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       limit query int false "Number of items per page"
+// @Param       offset query int false "Number of items to skip"
+// @Param       sort_by query string false "Field to sort by" Enums(user_id, username)
+// @Param       sort_order query string false "Sort order" Enums(asc, desc)
+// @Success     200 {array} UserResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /users [get]
 func (c *serverConfig) GetUsersHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Parse pagination and sorting parameters
 	limit, offset := parsePaginationParams(r)
@@ -69,6 +105,19 @@ func (c *serverConfig) GetUsersHandler(w http.ResponseWriter, r *http.Request, p
 	json.NewEncoder(w).Encode(users)
 }
 
+// GetUserHandler godoc
+// @Summary     Get user by ID
+// @Description Get a specific user by their ID
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "User ID"
+// @Success     200 {object} UserResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Router      /users/{id} [get]
 func (c *serverConfig) GetUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -429,6 +478,18 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 }
 
 // Authentication Handlers
+// RegisterHandler godoc
+// @Summary     Register a new user
+// @Description Register a new user account
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       user body types.UserCreateRequest true "User registration data"
+// @Success     201 {object} AuthResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     409 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /auth/join [post]
 func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req types.UserCreateRequest
 	if err := c.readRequestJSON(w, r, &req); err != nil {
@@ -493,6 +554,18 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 	json.NewEncoder(w).Encode(response)
 }
 
+// LoginHandler godoc
+// @Summary     User login
+// @Description Authenticate user and get JWT token
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       credentials body LoginRequest true "User login credentials"
+// @Success     200 {object} AuthResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /auth/login [post]
 func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req struct {
 		Username string `json:"username"`

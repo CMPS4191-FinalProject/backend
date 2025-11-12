@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func (c *serverConfig) routes() http.Handler {
@@ -12,6 +13,11 @@ func (c *serverConfig) routes() http.Handler {
 
 	c.router.GET(v("/healthcheck"), func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		c.HealthCheckHandler(w, r, ps)
+	})
+
+	// Swagger UI route (public)
+	c.router.GET("/swagger/*any", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		httpSwagger.WrapHandler(w, r)
 	})
 
 	// Authentication routes (public)
