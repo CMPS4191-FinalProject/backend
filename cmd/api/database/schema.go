@@ -11,8 +11,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var InMemoryQuotes []types.Quote
-var InMemoryComments []types.Comment
+var InMemoryUsers []types.User
+var InMemoryNodes []types.Node
+var InMemoryNodeData []types.NodeData
+var InMemoryNodeFavorites []types.NodeFavorite
 
 type DatabaseType int
 
@@ -72,8 +74,11 @@ func (db *Database) Disconnect() error {
 	switch db.dbType {
 	case InMemory:
 		// Disconnect from in-memory database
-		// Flush the in-memory quotes
-		InMemoryQuotes = nil
+		// Flush the in-memory data
+		InMemoryUsers = nil
+		InMemoryNodes = nil
+		InMemoryNodeData = nil
+		InMemoryNodeFavorites = nil
 		return nil
 	case Postgres:
 		// Disconnect from Postgres database
