@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"qotd/cmd/api/types"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 )
 
@@ -174,4 +176,59 @@ func (c *serverConfig) getAllowedOrigins() []string {
 
 	// Production: require explicit configuration
 	return []string{}
+}
+
+// ContextKey type for context keys
+type ContextKey string
+
+const UserContextKey ContextKey = "user"
+
+// authMiddleware validates JWT tokens and adds user info to request context
+func (c *serverConfig) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get Authorization header
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract token from header
+		token, err := ExtractTokenFromHeader(authHeader)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		// Validate token
+		claims, err := ValidateJWT(token)
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		// Add user info to request context
+		ctx := context.WithValue(r.Context(), UserContextKey, claims)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requireAuth is a wrapper that applies authentication middleware to a handler
+func (c *serverConfig) requireAuth(handler func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Apply auth middleware
+		authHandler := c.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler(w, r, ps)
+		}))
+
+		authHandler.ServeHTTP(w, r)
+	}
+}
+
+// getUserFromContext extracts user claims from request context
+func getUserFromContext(r *http.Request) (*AuthClaims, bool) {
+	user, ok := r.Context().Value(UserContextKey).(*AuthClaims)
+	return user, ok
 }

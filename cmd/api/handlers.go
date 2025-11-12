@@ -427,3 +427,131 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// Authentication Handlers
+func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var req types.UserCreateRequest
+	if err := c.readRequestJSON(w, r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate input
+	if req.Username == "" || req.Password == "" {
+		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user already exists
+	existingUser, _ := c.db.GetUserByUsername(req.Username)
+	if existingUser != nil {
+		http.Error(w, "Username already exists", http.StatusConflict)
+		return
+	}
+
+	// Hash password
+	passwordHash, err := HashPassword(req.Password)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	// Create user
+	user := types.User{
+		Username: req.Username,
+		Password: EncodePasswordHash(passwordHash),
+	}
+
+	if err := database.ValidateUser(user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := c.db.CreateUser(user); err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate JWT token
+	token, err := GenerateJWT(&user)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// Return user info and token (excluding password)
+	response := map[string]interface{}{
+		"user": map[string]interface{}{
+			"user_id":  user.UserID,
+			"username": user.Username,
+		},
+		"token": token,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := c.readRequestJSON(w, r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate input
+	if req.Username == "" || req.Password == "" {
+		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		return
+	}
+
+	// Get user by username
+	user, err := c.db.GetUserByUsername(req.Username)
+	if err != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	// Decode stored password hash
+	storedHash, err := DecodePasswordHash(user.Password)
+	if err != nil {
+		http.Error(w, "Invalid stored password format", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify password
+	isValid, err := VerifyPassword(req.Password, storedHash)
+	if err != nil {
+		http.Error(w, "Failed to verify password", http.StatusInternalServerError)
+		return
+	}
+
+	if !isValid {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate JWT token
+	token, err := GenerateJWT(user)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// Return user info and token (excluding password)
+	response := map[string]interface{}{
+		"user": map[string]interface{}{
+			"user_id":  user.UserID,
+			"username": user.Username,
+		},
+		"token": token,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
