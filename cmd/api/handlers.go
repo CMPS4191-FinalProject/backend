@@ -137,6 +137,21 @@ func (c *serverConfig) GetUserHandler(w http.ResponseWriter, r *http.Request, ps
 	json.NewEncoder(w).Encode(user)
 }
 
+// UpdateUserHandler godoc
+// @Summary     Update a user
+// @Description Update an existing user's information
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "User ID"
+// @Param       user body types.UserUpdateRequest true "Updated user data"
+// @Success     200 {object} UserResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /users/{id} [put]
 func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -163,6 +178,20 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 	json.NewEncoder(w).Encode(updatedUser)
 }
 
+// DeleteUserHandler godoc
+// @Summary     Delete a user
+// @Description Delete a user by their ID
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "User ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /users/{id} [delete]
 func (c *serverConfig) DeleteUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -178,6 +207,19 @@ func (c *serverConfig) DeleteUserHandler(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// CreateNodeHandler godoc
+// @Summary     Create a new monitoring node
+// @Description Create a new IoT monitoring device/node
+// @Tags        nodes
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       node body types.NodeCreateRequest true "Node data"
+// @Success     201 {object} NodeResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodes [post]
 func (c *serverConfig) CreateNodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var node types.Node
 	if err := c.readRequestJSON(w, r, &node); err != nil {
@@ -198,6 +240,21 @@ func (c *serverConfig) CreateNodeHandler(w http.ResponseWriter, r *http.Request,
 	json.NewEncoder(w).Encode(node)
 }
 
+// GetNodesHandler godoc
+// @Summary     Get all monitoring nodes
+// @Description Get a list of all IoT monitoring devices/nodes with pagination
+// @Tags        nodes
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       limit query int false "Limit number of results"
+// @Param       offset query int false "Offset for pagination"
+// @Param       sortBy query string false "Sort by field (device_id, status)"
+// @Param       sortOrder query string false "Sort order (asc, desc)"
+// @Success     200 {array} NodeResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodes [get]
 func (c *serverConfig) GetNodesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Parse pagination and sorting parameters
 	limit, offset := parsePaginationParams(r)
@@ -217,6 +274,20 @@ func (c *serverConfig) GetNodesHandler(w http.ResponseWriter, r *http.Request, p
 	json.NewEncoder(w).Encode(nodes)
 }
 
+// GetNodeHandler godoc
+// @Summary     Get a monitoring node by ID
+// @Description Get a specific IoT monitoring device/node by its device ID
+// @Tags        nodes
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Device ID"
+// @Success     200 {object} NodeResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodes/{id} [get]
 func (c *serverConfig) GetNodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the node ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -236,6 +307,21 @@ func (c *serverConfig) GetNodeHandler(w http.ResponseWriter, r *http.Request, ps
 	json.NewEncoder(w).Encode(node)
 }
 
+// UpdateNodeHandler godoc
+// @Summary     Update a monitoring node
+// @Description Update an existing IoT monitoring device/node's status
+// @Tags        nodes
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Device ID"
+// @Param       node body types.NodeUpdateRequest true "Updated node data"
+// @Success     200 {object} NodeResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodes/{id} [put]
 func (c *serverConfig) UpdateNodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the node ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -262,6 +348,20 @@ func (c *serverConfig) UpdateNodeHandler(w http.ResponseWriter, r *http.Request,
 	json.NewEncoder(w).Encode(updatedNode)
 }
 
+// DeleteNodeHandler godoc
+// @Summary     Delete a monitoring node
+// @Description Delete an IoT monitoring device/node by its device ID
+// @Tags        nodes
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Device ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodes/{id} [delete]
 func (c *serverConfig) DeleteNodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the node ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -277,6 +377,19 @@ func (c *serverConfig) DeleteNodeHandler(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// CreateNodeDataHandler godoc
+// @Summary     Create sensor data reading
+// @Description Create a new sensor data reading from an IoT monitoring device
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       nodedata body types.NodeDataCreateRequest true "Sensor data"
+// @Success     201 {object} NodeDataResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata [post]
 func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var nodeData types.NodeData
 	if err := c.readRequestJSON(w, r, &nodeData); err != nil {
@@ -297,6 +410,21 @@ func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(nodeData)
 }
 
+// GetNodeDataHandler godoc
+// @Summary     Get all sensor data
+// @Description Get a list of all sensor readings from IoT monitoring devices with pagination
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       limit query int false "Limit number of results"
+// @Param       offset query int false "Offset for pagination"
+// @Param       sortBy query string false "Sort by field (id, user_id, device_id, moisture_content, timestamp)"
+// @Param       sortOrder query string false "Sort order (asc, desc)"
+// @Success     200 {array} NodeDataResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata [get]
 func (c *serverConfig) GetNodeDataHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Parse pagination and sorting parameters
 	limit, offset := parsePaginationParams(r)
@@ -314,6 +442,20 @@ func (c *serverConfig) GetNodeDataHandler(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(nodeData)
 }
 
+// GetNodeDataByIDHandler godoc
+// @Summary     Get sensor data by ID
+// @Description Get a specific sensor reading by its ID
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Node Data ID"
+// @Success     200 {object} NodeDataResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata/{id} [get]
 func (c *serverConfig) GetNodeDataByIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the node data ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -333,6 +475,19 @@ func (c *serverConfig) GetNodeDataByIDHandler(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(nodeData)
 }
 
+// GetNodeDataByDeviceIDHandler godoc
+// @Summary     Get sensor data by device ID
+// @Description Get all sensor readings from a specific IoT monitoring device
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       deviceId path int true "Device ID"
+// @Success     200 {array} NodeDataResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata/device/{deviceId} [get]
 func (c *serverConfig) GetNodeDataByDeviceIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the device ID from the URL parameters
 	idStr := ps.ByName("deviceId")
@@ -356,6 +511,19 @@ func (c *serverConfig) GetNodeDataByDeviceIDHandler(w http.ResponseWriter, r *ht
 	json.NewEncoder(w).Encode(nodeData)
 }
 
+// GetNodeDataByUserIDHandler godoc
+// @Summary     Get sensor data by user ID
+// @Description Get all sensor readings associated with a specific user
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       userId path int true "User ID"
+// @Success     200 {array} NodeDataResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata/user/{userId} [get]
 func (c *serverConfig) GetNodeDataByUserIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID from the URL parameters
 	idStr := ps.ByName("userId")
@@ -379,6 +547,20 @@ func (c *serverConfig) GetNodeDataByUserIDHandler(w http.ResponseWriter, r *http
 	json.NewEncoder(w).Encode(nodeData)
 }
 
+// DeleteNodeDataHandler godoc
+// @Summary     Delete sensor data
+// @Description Delete a specific sensor reading by its ID
+// @Tags        nodedata
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Node Data ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /nodedata/{id} [delete]
 func (c *serverConfig) DeleteNodeDataHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the node data ID from the URL parameters
 	idStr := ps.ByName("id")
@@ -394,6 +576,20 @@ func (c *serverConfig) DeleteNodeDataHandler(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// CreateNodeFavoriteHandler godoc
+// @Summary     Add node to favorites
+// @Description Add an IoT monitoring device to a user's favorites
+// @Tags        favorites
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       favorite body types.NodeFavoriteCreateRequest true "Favorite data"
+// @Success     201 {object} NodeFavoritesResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     409 {object} ErrorResponse "Node already in favorites"
+// @Failure     500 {object} ErrorResponse
+// @Router      /favorites [post]
 // Node Favorites Handlers
 func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var favorite types.NodeFavorite
@@ -415,6 +611,17 @@ func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(favorite)
 }
 
+// GetNodeFavoritesHandler godoc
+// @Summary     Get all node favorites
+// @Description Get a list of all user's favorite IoT monitoring devices
+// @Tags        favorites
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {array} NodeFavoritesResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /favorites [get]
 func (c *serverConfig) GetNodeFavoritesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	favorites, err := c.db.GetNodeFavorites()
 	if err != nil {
@@ -430,6 +637,20 @@ func (c *serverConfig) GetNodeFavoritesHandler(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(favorites)
 }
 
+// GetNodeFavoritesByUserIDHandler godoc
+// @Summary     Get user's node favorites
+// @Description Get all favorite IoT monitoring devices for a specific user by user ID
+// @Tags        favorites
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       user_id path int true "User ID"
+// @Success     200 {array} NodeFavoritesResponse
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /favorites/user/{user_id} [get]
 func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID from the URL parameters
 	idStr := ps.ByName("userId")
@@ -453,6 +674,20 @@ func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r 
 	json.NewEncoder(w).Encode(favorites)
 }
 
+// DeleteNodeFavoriteHandler godoc
+// @Summary     Delete a node favorite
+// @Description Remove an IoT monitoring device from user's favorites list
+// @Tags        favorites
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Param       id path int true "Favorite ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} ErrorResponse
+// @Failure     401 {object} ErrorResponse
+// @Failure     404 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /favorites/{id} [delete]
 func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID and device ID from the URL parameters
 	userIDStr := ps.ByName("userId")

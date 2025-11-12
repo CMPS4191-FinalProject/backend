@@ -37,8 +37,8 @@ type serverConfig struct {
 // @license.name  MIT
 // @license.url   https://opensource.org/licenses/MIT
 
-// @host      localhost:8080
-// @BasePath  /api/v1
+// @host      localhost:4000
+// @BasePath  /v1
 
 // @securityDefinitions.apikey Bearer
 // @in header

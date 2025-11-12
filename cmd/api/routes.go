@@ -41,10 +41,9 @@ func (c *serverConfig) routes() http.Handler {
 	// Node Data (sensor readings) - protected routes
 	c.router.POST(v("/nodedata"), c.requireAuth(c.CreateNodeDataHandler))                        // Create sensor reading
 	c.router.GET(v("/nodedata"), c.requireAuth(c.GetNodeDataHandler))                            // List all sensor data
-	c.router.GET(v("/nodedata/:id"), c.requireAuth(c.GetNodeDataByIDHandler))                    // Get sensor data by ID
 	c.router.GET(v("/nodedata/device/:deviceId"), c.requireAuth(c.GetNodeDataByDeviceIDHandler)) // Get data by device
 	c.router.GET(v("/nodedata/user/:userId"), c.requireAuth(c.GetNodeDataByUserIDHandler))       // Get data by user
-	c.router.DELETE(v("/nodedata/:id"), c.requireAuth(c.DeleteNodeDataHandler))                  // Delete sensor data
+	c.router.DELETE(v("/nodedata/device/:deviceId"), c.requireAuth(c.DeleteNodeDataHandler))     // Delete sensor data
 
 	// Node Favorites - protected routes
 	c.router.POST(v("/favorites"), c.requireAuth(c.CreateNodeFavoriteHandler))                                 // Add favorite

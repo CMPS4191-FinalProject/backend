@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /v1
 definitions:
   main.AuthResponse:
     properties:
@@ -45,6 +45,77 @@ definitions:
     - password
     - username
     type: object
+  main.NodeDataItem:
+    properties:
+      device_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      moisture_content:
+        example: 45.5
+        type: number
+      timestamp:
+        example: "2023-01-01T12:00:00Z"
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  main.NodeDataResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/main.NodeDataItem'
+        type: array
+      meta:
+        $ref: '#/definitions/main.PaginationResponse'
+    type: object
+  main.NodeFavoriteItem:
+    properties:
+      device_id:
+        example: 1
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  main.NodeFavoritesResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/main.NodeFavoriteItem'
+        type: array
+    type: object
+  main.NodeResponse:
+    properties:
+      device_id:
+        example: 1
+        type: integer
+      status:
+        enum:
+        - ONLINE
+        - OFFLINE
+        - ERROR
+        example: ONLINE
+        type: string
+    type: object
+  main.PaginationResponse:
+    properties:
+      page:
+        example: 1
+        type: integer
+      per_page:
+        example: 10
+        type: integer
+      total:
+        example: 100
+        type: integer
+      total_pages:
+        example: 10
+        type: integer
+    type: object
   main.UserResponse:
     properties:
       user_id:
@@ -53,6 +124,42 @@ definitions:
       username:
         example: john_doe
         type: string
+    type: object
+  types.NodeCreateRequest:
+    properties:
+      status:
+        $ref: '#/definitions/types.NodeStatus'
+    type: object
+  types.NodeDataCreateRequest:
+    properties:
+      device_id:
+        type: integer
+      moisture_content:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  types.NodeFavoriteCreateRequest:
+    properties:
+      device_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  types.NodeStatus:
+    enum:
+    - ONLINE
+    - OFFLINE
+    - ERROR
+    type: string
+    x-enum-varnames:
+    - NodeStatusOnline
+    - NodeStatusOffline
+    - NodeStatusError
+  types.NodeUpdateRequest:
+    properties:
+      status:
+        $ref: '#/definitions/types.NodeStatus'
     type: object
   types.User:
     properties:
@@ -68,7 +175,14 @@ definitions:
       username:
         type: string
     type: object
-host: localhost:8080
+  types.UserUpdateRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:4000
 info:
   contact:
     email: support@swagger.io
@@ -150,6 +264,151 @@ paths:
       summary: User login
       tags:
       - auth
+  /favorites:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all user's favorite IoT monitoring devices
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeFavoritesResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all node favorites
+      tags:
+      - favorites
+    post:
+      consumes:
+      - application/json
+      description: Add an IoT monitoring device to a user's favorites
+      parameters:
+      - description: Favorite data
+        in: body
+        name: favorite
+        required: true
+        schema:
+          $ref: '#/definitions/types.NodeFavoriteCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.NodeFavoritesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "409":
+          description: Node already in favorites
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Add node to favorites
+      tags:
+      - favorites
+  /favorites/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an IoT monitoring device from user's favorites list
+      parameters:
+      - description: Favorite ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a node favorite
+      tags:
+      - favorites
+  /favorites/user/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all favorite IoT monitoring devices for a specific user by
+        user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeFavoritesResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user's node favorites
+      tags:
+      - favorites
   /healthcheck:
     get:
       consumes:
@@ -165,6 +424,433 @@ paths:
       summary: Health check endpoint
       tags:
       - health
+  /nodedata:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all sensor readings from IoT monitoring devices with
+        pagination
+      parameters:
+      - description: Limit number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Sort by field (id, user_id, device_id, moisture_content, timestamp)
+        in: query
+        name: sortBy
+        type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sortOrder
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeDataResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all sensor data
+      tags:
+      - nodedata
+    post:
+      consumes:
+      - application/json
+      description: Create a new sensor data reading from an IoT monitoring device
+      parameters:
+      - description: Sensor data
+        in: body
+        name: nodedata
+        required: true
+        schema:
+          $ref: '#/definitions/types.NodeDataCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.NodeDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create sensor data reading
+      tags:
+      - nodedata
+  /nodedata/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific sensor reading by its ID
+      parameters:
+      - description: Node Data ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete sensor data
+      tags:
+      - nodedata
+    get:
+      consumes:
+      - application/json
+      description: Get a specific sensor reading by its ID
+      parameters:
+      - description: Node Data ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.NodeDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get sensor data by ID
+      tags:
+      - nodedata
+  /nodedata/device/{deviceId}:
+    get:
+      consumes:
+      - application/json
+      description: Get all sensor readings from a specific IoT monitoring device
+      parameters:
+      - description: Device ID
+        in: path
+        name: deviceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeDataResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get sensor data by device ID
+      tags:
+      - nodedata
+  /nodedata/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Get all sensor readings associated with a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeDataResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get sensor data by user ID
+      tags:
+      - nodedata
+  /nodes:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all IoT monitoring devices/nodes with pagination
+      parameters:
+      - description: Limit number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Sort by field (device_id, status)
+        in: query
+        name: sortBy
+        type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sortOrder
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.NodeResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all monitoring nodes
+      tags:
+      - nodes
+    post:
+      consumes:
+      - application/json
+      description: Create a new IoT monitoring device/node
+      parameters:
+      - description: Node data
+        in: body
+        name: node
+        required: true
+        schema:
+          $ref: '#/definitions/types.NodeCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.NodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new monitoring node
+      tags:
+      - nodes
+  /nodes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an IoT monitoring device/node by its device ID
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a monitoring node
+      tags:
+      - nodes
+    get:
+      consumes:
+      - application/json
+      description: Get a specific IoT monitoring device/node by its device ID
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.NodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get a monitoring node by ID
+      tags:
+      - nodes
+    put:
+      consumes:
+      - application/json
+      description: Update an existing IoT monitoring device/node's status
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated node data
+        in: body
+        name: node
+        required: true
+        schema:
+          $ref: '#/definitions/types.NodeUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.NodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a monitoring node
+      tags:
+      - nodes
   /users:
     get:
       consumes:
@@ -251,6 +937,42 @@ paths:
       tags:
       - users
   /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a user
+      tags:
+      - users
     get:
       consumes:
       - application/json
@@ -283,6 +1005,50 @@ paths:
       security:
       - Bearer: []
       summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user's information
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/types.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a user
       tags:
       - users
 securityDefinitions:

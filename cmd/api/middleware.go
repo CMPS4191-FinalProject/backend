@@ -189,7 +189,7 @@ func (c *serverConfig) authMiddleware(next http.Handler) http.Handler {
 		// Get Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+			http.Error(w, "You're not logged in.", http.StatusUnauthorized)
 			return
 		}
 
