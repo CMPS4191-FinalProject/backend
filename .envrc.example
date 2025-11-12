@@ -1,0 +1,7 @@
+DB_TYPE=POSTGRES
+export DB_DSN="postgres://postgres:postgres@localhost/soilapp?sslmode=disable"
+API_VERSION="v1"
+ENVIRONMENT="development"
+PORT="4000"
+CORS_ALLOW_CREDENTIALS=true
+CORS_ALLOWED_ORIGINS="https://www.google.com, http://www.google.com, http://localhost:9000, http://localhost:5173"

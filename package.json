@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "manage": "drizzle-kit studio --port=3000"
+  },
+  "dependencies": {
+    "dotenvrc": "^1.0.1",
+    "drizzle-kit": "^0.31.5",
+    "drizzle-orm": "^0.44.6",
+    "fs": "^0.0.1-security",
+    "pg": "^8.16.3"
+  }
+}
