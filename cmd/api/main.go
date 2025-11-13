@@ -95,6 +95,9 @@ func main() {
 	router := config.routes()
 	config.db.Connect()
 
+	// Initialize WebSocket hub with database access
+	InitWebSocketHub(config.db)
+
 	// Create HTTP server
 	server := &http.Server{
 		Addr:         ":" + fmt.Sprint(config.port),

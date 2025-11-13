@@ -73,7 +73,6 @@ type NodeDataCreateRequest struct {
 
 // NodeFavoriteCreateRequest represents the request payload for adding a favorite node
 type NodeFavoriteCreateRequest struct {
-	UserID   int `json:"user_id"`
 	DeviceID int `json:"device_id"`
 }
 

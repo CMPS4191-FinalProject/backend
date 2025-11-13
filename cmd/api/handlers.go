@@ -406,6 +406,10 @@ func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Broadcast new sensor data to WebSocket clients
+	BroadcastSensorData(nodeData.UserID, nodeData.DeviceID, nodeData.MoistureContent)
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(nodeData)
 }
@@ -592,10 +596,21 @@ func (c *serverConfig) DeleteNodeDataHandler(w http.ResponseWriter, r *http.Requ
 // @Router      /favorites [post]
 // Node Favorites Handlers
 func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var favorite types.NodeFavorite
-	if err := c.readRequestJSON(w, r, &favorite); err != nil {
+	var favorite_request types.NodeFavoriteCreateRequest
+	if err := c.readRequestJSON(w, r, &favorite_request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	user, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+	// Cast this into a types.NodeFavorite type
+	favorite := types.NodeFavorite{
+		DeviceID: favorite_request.DeviceID,
+		UserID:   user.UserID,
 	}
 
 	if err := database.ValidateNodeFavorite(favorite); err != nil {
@@ -681,23 +696,22 @@ func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r 
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Param       id path int true "Favorite ID"
+// @Param       deviceId path int true "Device ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} ErrorResponse
 // @Failure     401 {object} ErrorResponse
 // @Failure     404 {object} ErrorResponse
 // @Failure     500 {object} ErrorResponse
-// @Router      /favorites/{id} [delete]
+// @Router      /favorites/{deviceId} [delete]
 func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Extract the user ID and device ID from the URL parameters
-	userIDStr := ps.ByName("userId")
-	deviceIDStr := ps.ByName("deviceId")
-
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+	user, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
 		return
 	}
+	userID := user.UserID
+	deviceIDStr := ps.ByName("deviceId")
 
 	deviceID, err := strconv.Atoi(deviceIDStr)
 	if err != nil {

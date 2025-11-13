@@ -46,9 +46,13 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.DELETE(v("/nodedata/device/:deviceId"), c.requireAuth(c.DeleteNodeDataHandler))     // Delete sensor data
 
 	// Node Favorites - protected routes
-	c.router.POST(v("/favorites"), c.requireAuth(c.CreateNodeFavoriteHandler))                                 // Add favorite
-	c.router.GET(v("/favorites"), c.requireAuth(c.GetNodeFavoritesHandler))                                    // List all favorites
-	c.router.GET(v("/favorites/user/:userId"), c.requireAuth(c.GetNodeFavoritesByUserIDHandler))               // Get user's favorites
-	c.router.DELETE(v("/favorites/user/:userId/device/:deviceId"), c.requireAuth(c.DeleteNodeFavoriteHandler)) // Remove favorite
+	c.router.POST(v("/favorites"), c.requireAuth(c.CreateNodeFavoriteHandler))                   // Add favorite
+	c.router.GET(v("/favorites"), c.requireAuth(c.GetNodeFavoritesHandler))                      // List all favorites
+	c.router.GET(v("/favorites/user/:userId"), c.requireAuth(c.GetNodeFavoritesByUserIDHandler)) // Get user's favorites
+	c.router.DELETE(v("/favorites/:deviceId"), c.requireAuth(c.DeleteNodeFavoriteHandler))       // Remove favorite
+
+	// WebSocket faucet endpoint (protected)
+	c.router.GET(v("/faucet"), c.requireAuth(c.FaucetHandler))
+
 	return c.middleware(c.router)
 }

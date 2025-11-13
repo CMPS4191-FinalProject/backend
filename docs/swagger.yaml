@@ -77,9 +77,6 @@ definitions:
       device_id:
         example: 1
         type: integer
-      user_id:
-        example: 1
-        type: integer
     type: object
   main.NodeFavoritesResponse:
     properties:
@@ -142,8 +139,6 @@ definitions:
   types.NodeFavoriteCreateRequest:
     properties:
       device_id:
-        type: integer
-      user_id:
         type: integer
     type: object
   types.NodeStatus:
@@ -264,6 +259,31 @@ paths:
       summary: User login
       tags:
       - auth
+  /faucet:
+    get:
+      consumes:
+      - application/json
+      description: Connect to real-time data stream via WebSocket
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: WebSocket faucet endpoint
+      tags:
+      - faucet
   /favorites:
     get:
       consumes:
@@ -330,15 +350,15 @@ paths:
       summary: Add node to favorites
       tags:
       - favorites
-  /favorites/{id}:
+  /favorites/{deviceId}:
     delete:
       consumes:
       - application/json
       description: Remove an IoT monitoring device from user's favorites list
       parameters:
-      - description: Favorite ID
+      - description: Device ID
         in: path
-        name: id
+        name: deviceId
         required: true
         type: integer
       produces:

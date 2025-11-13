@@ -241,7 +241,7 @@ func (db *Database) DeleteNodeFavoritesByDeviceID(deviceID int) error {
 
 // ValidateNodeFavorite validates node favorite data before database operations
 func ValidateNodeFavorite(favorite types.NodeFavorite) error {
-	if favorite.UserID <= 0 {
+	if favorite.UserID < 0 {
 		return fmt.Errorf("invalid user_id: must be positive")
 	}
 	if favorite.DeviceID <= 0 {

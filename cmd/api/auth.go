@@ -158,3 +158,11 @@ func DecodePasswordHash(encoded string) (*PasswordHash, error) {
 		Salt: parts[1],
 	}, nil
 }
+
+func GetUserIDFromJWT(tokenString string) (int, error) {
+	claims, err := ValidateJWT(tokenString)
+	if err != nil {
+		return 0, err
+	}
+	return claims.UserID, nil
+}

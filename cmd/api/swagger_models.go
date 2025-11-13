@@ -78,6 +78,5 @@ type NodeFavoritesResponse struct {
 
 // NodeFavoriteItem represents a single node favorite item
 type NodeFavoriteItem struct {
-	UserID   int `json:"user_id" example:"1"`
 	DeviceID int `json:"device_id" example:"1"`
 }

@@ -338,7 +338,7 @@ func (db *Database) DeleteNodeData(id int) error {
 
 // ValidateNodeData validates node data before database operations
 func ValidateNodeData(nodeData types.NodeData) error {
-	if nodeData.UserID <= 0 {
+	if nodeData.UserID < 0 {
 		return fmt.Errorf("invalid user_id: must be positive")
 	}
 	if nodeData.DeviceID <= 0 {

@@ -122,6 +122,46 @@
                 }
             }
         },
+        "/faucet": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Connect to real-time data stream via WebSocket",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "faucet"
+                ],
+                "summary": "WebSocket faucet endpoint",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/favorites": {
             "get": {
                 "security": [
@@ -290,7 +330,7 @@
                 }
             }
         },
-        "/favorites/{id}": {
+        "/favorites/{deviceId}": {
             "delete": {
                 "security": [
                     {
@@ -311,8 +351,8 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Favorite ID",
-                        "name": "id",
+                        "description": "Device ID",
+                        "name": "deviceId",
                         "in": "path",
                         "required": true
                     }
@@ -1461,10 +1501,6 @@
                 "device_id": {
                     "type": "integer",
                     "example": 1
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 1
                 }
             }
         },
@@ -1557,9 +1593,6 @@
             "type": "object",
             "properties": {
                 "device_id": {
-                    "type": "integer"
-                },
-                "user_id": {
                     "type": "integer"
                 }
             }

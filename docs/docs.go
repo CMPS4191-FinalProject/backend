@@ -128,6 +128,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/faucet": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Connect to real-time data stream via WebSocket",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "faucet"
+                ],
+                "summary": "WebSocket faucet endpoint",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/favorites": {
             "get": {
                 "security": [
@@ -296,7 +336,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/favorites/{id}": {
+        "/favorites/{deviceId}": {
             "delete": {
                 "security": [
                     {
@@ -317,8 +357,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Favorite ID",
-                        "name": "id",
+                        "description": "Device ID",
+                        "name": "deviceId",
                         "in": "path",
                         "required": true
                     }
@@ -1467,10 +1507,6 @@ const docTemplate = `{
                 "device_id": {
                     "type": "integer",
                     "example": 1
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 1
                 }
             }
         },
@@ -1563,9 +1599,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "device_id": {
-                    "type": "integer"
-                },
-                "user_id": {
                     "type": "integer"
                 }
             }
