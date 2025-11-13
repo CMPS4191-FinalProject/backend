@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"qotd/cmd/api/database"
+	"qotd/cmd/api/types"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -288,6 +289,33 @@ func (c *Client) readPump() {
 			case c.send <- msg:
 			default:
 				return
+			}
+		case "device_update":
+			// Broadcast device update to all clients
+			deviceUpdate := map[string]interface{}{
+				"moisture_content": nil,
+				"device_id":        nil,
+				"user_id":          nil,
+			}
+
+			if dataMap, ok := msg.Data.(map[string]interface{}); ok {
+				if deviceID, ok := dataMap["device_id"].(float64); ok {
+					deviceUpdate["device_id"] = int(deviceID)
+				}
+				if userID, ok := dataMap["user_id"].(float64); ok {
+					deviceUpdate["user_id"] = int(userID)
+				}
+				if moistureContent, ok := dataMap["moisture_content"].(float64); ok {
+					deviceUpdate["moisture_content"] = moistureContent
+				}
+				if status, ok := dataMap["status"].(string); ok {
+					deviceUpdate["status"] = types.NodeStatus(status)
+				}
+				if errorDetails, ok := dataMap["error_details"].(string); ok {
+					deviceUpdate["error_details"] = &errorDetails
+				}
+				moistureValue := deviceUpdate["moisture_content"].(float64)
+				BroadcastSensorData(deviceUpdate["user_id"].(int), deviceUpdate["device_id"].(int), &moistureValue)
 			}
 		default:
 			// Broadcast other messages to all clients
