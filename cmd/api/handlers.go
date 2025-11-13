@@ -6,6 +6,7 @@ import (
 	"qotd/cmd/api/database"
 	"qotd/cmd/api/types"
 	"strconv"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -176,6 +177,34 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(updatedUser)
+}
+
+// GetCurrentUserHandler godoc
+// @Summary     Get current user
+// @Description Get the currently authenticated user's information
+// @Tags        users
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {object} UserResponse
+// @Failure     401 {object} ErrorResponse
+// @Router      /users/me [get]
+func (c *serverConfig) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Get full user data from database
+	fullUser, err := c.db.GetUserByID(user.UserID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fullUser)
 }
 
 // DeleteUserHandler godoc
@@ -872,6 +901,59 @@ func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps h
 			"username": user.Username,
 		},
 		"token": token,
+	}
+
+	// Set JWT token in secure cookie
+	cookie := &http.Cookie{
+		Name:     "authorization",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: false,
+		Secure:   getEnvAsBool("HTTPS_ENABLED", false), // Use HTTPS in production
+		SameSite: http.SameSiteNoneMode,                // Allow cross-origin requests
+		MaxAge:   int((24 * time.Hour).Seconds()),      // 24 hours in seconds
+	}
+
+	// In development, allow less restrictive SameSite
+	if getEnvAsString("ENVIRONMENT", "development") == "development" {
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
+	}
+
+	http.SetCookie(w, cookie)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// LogoutHandler godoc
+// @Summary     User logout
+// @Description Logout user and clear authentication cookie
+// @Tags        auth
+// @Success     200 {object} map[string]string
+// @Failure     500 {object} ErrorResponse
+// @Router      /auth/logout [post]
+func (c *serverConfig) LogoutHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Clear the authorization cookie
+	cookie := &http.Cookie{
+		Name:     "authorization",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   getEnvAsBool("HTTPS_ENABLED", false),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1, // Immediately expire the cookie
+	}
+
+	// In development, use same settings as login
+	if getEnvAsString("ENVIRONMENT", "development") == "development" {
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
+	}
+
+	http.SetCookie(w, cookie)
+
+	response := map[string]string{
+		"message": "Successfully logged out",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -138,7 +138,7 @@ func (c *serverConfig) middleware(next http.Handler) http.Handler {
 			"Content-Length",
 			"Content-Type",
 		},
-		AllowCredentials: getEnvAsBool("CORS_ALLOW_CREDENTIALS", false),
+		AllowCredentials: getEnvAsBool("CORS_ALLOW_CREDENTIALS", c.env == "development"),
 		MaxAge:           300, // 5 minutes
 		Debug:            c.env == "development",
 	}
@@ -189,8 +189,13 @@ func (c *serverConfig) authMiddleware(next http.Handler) http.Handler {
 		// Get Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "You're not logged in.", http.StatusUnauthorized)
-			return
+			// Check for token in cookies if header is empty
+			if cookie, err := r.Cookie("authorization"); err == nil && cookie.Value != "" {
+				authHeader = "Bearer " + cookie.Value
+			} else {
+				http.Error(w, "You're not logged in.", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		// Extract token from header
