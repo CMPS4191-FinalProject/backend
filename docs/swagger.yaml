@@ -133,8 +133,6 @@ definitions:
         type: integer
       moisture_content:
         type: number
-      user_id:
-        type: integer
     type: object
   types.NodeFavoriteCreateRequest:
     properties:
@@ -257,6 +255,23 @@ paths:
           schema:
             $ref: '#/definitions/main.ErrorResponse'
       summary: User login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Logout user and clear authentication cookie
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: User logout
       tags:
       - auth
   /faucet:
@@ -1069,6 +1084,27 @@ paths:
       security:
       - Bearer: []
       summary: Update a user
+      tags:
+      - users
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the currently authenticated user's information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get current user
       tags:
       - users
 securityDefinitions:

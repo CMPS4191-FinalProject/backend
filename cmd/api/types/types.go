@@ -66,7 +66,6 @@ type NodeUpdateRequest struct {
 
 // NodeDataCreateRequest represents the request payload for creating node data
 type NodeDataCreateRequest struct {
-	UserID          int      `json:"user_id"`
 	DeviceID        int      `json:"device_id"`
 	MoistureContent *float64 `json:"moisture_content"`
 }

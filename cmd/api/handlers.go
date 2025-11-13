@@ -420,10 +420,23 @@ func (c *serverConfig) DeleteNodeHandler(w http.ResponseWriter, r *http.Request,
 // @Failure     500 {object} ErrorResponse
 // @Router      /nodedata [post]
 func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var nodeData types.NodeData
-	if err := c.readRequestJSON(w, r, &nodeData); err != nil {
+	var nodeDataCreateRequest types.NodeDataCreateRequest
+	if err := c.readRequestJSON(w, r, &nodeDataCreateRequest); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	user, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	nodeData := types.NodeData{
+		UserID:          user.UserID,
+		DeviceID:        nodeDataCreateRequest.DeviceID,
+		MoistureContent: nodeDataCreateRequest.MoistureContent,
+		Timestamp:       time.Now(),
 	}
 
 	if err := database.ValidateNodeData(nodeData); err != nil {
