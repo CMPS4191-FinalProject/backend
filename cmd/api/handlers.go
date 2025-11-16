@@ -929,8 +929,7 @@ func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps h
 
 	// In development, allow less restrictive SameSite
 	if getEnvAsString("ENVIRONMENT", "development") == "development" {
-		cookie.SameSite = http.SameSiteLaxMode
-		cookie.Secure = false
+		cookie.SameSite = http.SameSiteNoneMode
 	}
 
 	http.SetCookie(w, cookie)

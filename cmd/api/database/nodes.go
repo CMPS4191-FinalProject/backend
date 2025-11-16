@@ -125,11 +125,11 @@ func (db *Database) CreateNode(node types.Node) error {
 	case Postgres:
 		// Create node in Postgres database
 		query := `
-			INSERT INTO "Nodes" (status)
-			VALUES ($1)
+			INSERT INTO "Nodes" (status, status_details)
+			VALUES ($1, $2)
 			RETURNING device_id
 		`
-		args := []any{node.Status}
+		args := []any{node.Status, node.StatusDetails}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 
@@ -187,10 +187,10 @@ func (db *Database) UpdateNode(deviceID int, node types.Node) error {
 		// Update node in Postgres database
 		query := `
 			UPDATE "Nodes"
-			SET status = $1
-			WHERE device_id = $2
+			SET status = $1, status_details = $2
+			WHERE device_id = $3
 		`
-		args := []any{node.Status, deviceID}
+		args := []any{node.Status, node.StatusDetails, deviceID}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 		_, err := db.context.ExecContext(ctx, query, args...)

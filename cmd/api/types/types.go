@@ -23,8 +23,9 @@ type User struct {
 
 // Node represents a soil monitoring IoT device
 type Node struct {
-	DeviceID int        `json:"device_id"`
-	Status   NodeStatus `json:"status"`
+	DeviceID      int        `json:"device_id"`
+	Status        NodeStatus `json:"status"`
+	StatusDetails string     `json:"status_details,omitempty"`
 }
 
 // NodeData represents sensor data from a soil monitoring node
