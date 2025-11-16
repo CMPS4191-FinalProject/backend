@@ -825,8 +825,15 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	// Fetch the created user to get the correct user_id
+	createdUser, err := c.db.GetUserByUsername(req.Username)
+	if err != nil {
+		http.Error(w, "Failed to retrieve created user", http.StatusInternalServerError)
+		return
+	}
+
 	// Generate JWT token
-	token, err := GenerateJWT(&user)
+	token, err := GenerateJWT(createdUser)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
@@ -835,8 +842,8 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 	// Return user info and token (excluding password)
 	response := map[string]interface{}{
 		"user": map[string]interface{}{
-			"user_id":  user.UserID,
-			"username": user.Username,
+			"user_id":  createdUser.UserID,
+			"username": createdUser.Username,
 		},
 		"token": token,
 	}
