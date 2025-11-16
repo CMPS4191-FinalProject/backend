@@ -21,9 +21,9 @@ func (c *serverConfig) routes() http.Handler {
 	})
 
 	// Authentication routes (public)
-	c.router.POST(v("/auth/join"), c.RegisterHandler) // User registration
-	c.router.POST(v("/auth/login"), c.LoginHandler)   // User login
-	c.router.POST(v("/auth/logout"), c.LogoutHandler) // User logout
+	c.router.POST(v("/auth/join"), c.RegisterHandler)                // User registration
+	c.router.POST(v("/auth/login"), c.LoginHandler)                  // User login
+	c.router.POST(v("/auth/logout"), c.LogoutHandler)                // User logout
 	c.router.POST(v("/auth/verify"), c.requireAuth(c.VerifyHandler)) // Verify account
 
 	// Users (protected routes)
