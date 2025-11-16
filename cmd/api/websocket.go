@@ -231,10 +231,10 @@ const (
 	writeWait = 10 * time.Second
 
 	// Time allowed to read the next pong message from the peer
-	pongWait = 60 * time.Second
+	pongWait = 60 * time.Second // Increased to 1 minute for unreliable networks
 
 	// Send pings to peer with this period. Must be less than pongWait
-	pingPeriod = (pongWait * 9) / 10
+	pingPeriod = (pongWait * 9) / 10 // Send ping roughly every 54 seconds
 
 	// Maximum message size allowed from peer
 	maxMessageSize = 512
@@ -250,8 +250,16 @@ func (c *Client) readPump() {
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
+		log.Printf("Received pong from client (user %d)", c.userID)
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
+	})
+
+	// Also handle ping messages from client
+	c.conn.SetPingHandler(func(string) error {
+		log.Printf("Received ping from client (user %d), sending pong", c.userID)
+		c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		return c.conn.WriteMessage(websocket.PongMessage, nil)
 	})
 
 	for {
@@ -259,10 +267,15 @@ func (c *Client) readPump() {
 		err := c.conn.ReadJSON(&msg)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				log.Printf("WebSocket unexpected close error for user %d: %v", c.userID, err)
+			} else {
+				log.Printf("WebSocket read error for user %d: %v", c.userID, err)
 			}
 			break
 		}
+
+		// Reset read deadline on any message
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 
 		// Add user ID to message
 		msg.UserID = c.userID
@@ -338,18 +351,21 @@ func (c *Client) writePump() {
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel
+				log.Printf("Hub closed channel for user %d, closing connection", c.userID)
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
 			if err := c.conn.WriteJSON(message); err != nil {
-				log.Printf("WebSocket write error: %v", err)
+				log.Printf("WebSocket write error for user %d: %v", c.userID, err)
 				return
 			}
 
 		case <-ticker.C:
+			log.Printf("Sending ping to client (user %d)", c.userID)
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("Failed to send ping to user %d: %v", c.userID, err)
 				return
 			}
 		}
