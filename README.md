@@ -1,6 +1,6 @@
-# Quote of the Day API
+# Really basic soil moisture monitor API
 
-A simple Go API that returns a quote of the day at the `/quote` endpoint.
+A simple Go API that pulls data from an IoT device and returns the soil moisture content of them
 
 ## How to Run
 
@@ -10,20 +10,4 @@ A simple Go API that returns a quote of the day at the `/quote` endpoint.
 
    go run main.go
 
-4. Visit http://localhost:8080/quote in your browser or use curl:
-
-   curl http://localhost:8080/quote
-
-## API
-
-- **GET /quote**
-  - Returns a JSON object with a daily quote.
-
-## Example Response
-
-```
-{
-  "text": "The best way to get started is to quit talking and begin doing.",
-  "author": "Walt Disney"
-}
-```
+4. Visit http://localhost:4000/swagger/index.html in your browser to interact with the API
