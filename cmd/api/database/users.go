@@ -58,7 +58,7 @@ func (db *Database) GetUsersWithPagination(limit, offset int, sortBy, sortOrder 
 	case Postgres:
 		// Build the query with sorting and pagination
 		query := `
-			SELECT user_id, username, password
+			SELECT user_id, username, password, is_verified
 			FROM "Users"
 		`
 
@@ -98,7 +98,7 @@ func (db *Database) GetUsersWithPagination(limit, offset int, sortBy, sortOrder 
 		var users []types.User
 		for rows.Next() {
 			var u types.User
-			if err := rows.Scan(&u.UserID, &u.Username, &u.Password); err != nil {
+			if err := rows.Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified); err != nil {
 				return nil, err
 			}
 			users = append(users, u)
@@ -125,11 +125,11 @@ func (db *Database) CreateUser(user types.User) error {
 	case Postgres:
 		// Create user in Postgres database
 		query := `
-			INSERT INTO "Users" (username, password)
-			VALUES ($1, $2)
+			INSERT INTO "Users" (username, password, is_verified)
+			VALUES ($1, $2, $3)
 			RETURNING user_id
 		`
-		args := []any{user.Username, user.Password}
+		args := []any{user.Username, user.Password, user.IsVerified}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 
@@ -155,7 +155,7 @@ func (db *Database) GetUserByID(userID int) (*types.User, error) {
 	case Postgres:
 		// Fetch user by ID from Postgres database
 		query := `
-			SELECT user_id, username, password
+			SELECT user_id, username, password, is_verified
 			FROM "Users"
 			WHERE user_id = $1
 		`
@@ -163,7 +163,7 @@ func (db *Database) GetUserByID(userID int) (*types.User, error) {
 		defer cancel()
 
 		var u types.User
-		err := db.context.QueryRowContext(ctx, query, userID).Scan(&u.UserID, &u.Username, &u.Password)
+		err := db.context.QueryRowContext(ctx, query, userID).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (db *Database) GetUserByUsername(username string) (*types.User, error) {
 	case Postgres:
 		// Fetch user by username from Postgres database
 		query := `
-			SELECT user_id, username, password
+			SELECT user_id, username, password, is_verified
 			FROM "Users"
 			WHERE username = $1
 		`
@@ -193,7 +193,7 @@ func (db *Database) GetUserByUsername(username string) (*types.User, error) {
 		defer cancel()
 
 		var u types.User
-		err := db.context.QueryRowContext(ctx, query, username).Scan(&u.UserID, &u.Username, &u.Password)
+		err := db.context.QueryRowContext(ctx, query, username).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified)
 		if err != nil {
 			return nil, err
 		}
@@ -218,10 +218,10 @@ func (db *Database) UpdateUser(userID int, user types.User) error {
 		// Update user in Postgres database
 		query := `
 			UPDATE "Users"
-			SET username = $1, password = $2
-			WHERE user_id = $3
+			SET username = $1, password = $2, is_verified = $3
+			WHERE user_id = $4
 		`
-		args := []any{user.Username, user.Password, userID}
+		args := []any{user.Username, user.Password, user.IsVerified, userID}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 		_, err := db.context.ExecContext(ctx, query, args...)
@@ -257,6 +257,46 @@ func (db *Database) DeleteUser(userID int) error {
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+	return fmt.Errorf(DATABASE_UNSUPPORTED)
+}
+
+// VerifyUser marks a user as verified in the database
+func (db *Database) VerifyUser(userID int) error {
+	switch db.dbType {
+	case InMemory:
+		for i, user := range InMemoryUsers {
+			if user.UserID == userID {
+				InMemoryUsers[i].IsVerified = true
+				return nil
+			}
+		}
+		return fmt.Errorf("user not found")
+	case Postgres:
+		// Update user verification status in Postgres database
+		query := `
+			UPDATE "Users"
+			SET is_verified = true
+			WHERE user_id = $1
+		`
+		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
+		defer cancel()
+
+		result, err := db.context.ExecContext(ctx, query, userID)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected == 0 {
+			return fmt.Errorf("user not found")
+		}
+
 		return nil
 	}
 	return fmt.Errorf(DATABASE_UNSUPPORTED)

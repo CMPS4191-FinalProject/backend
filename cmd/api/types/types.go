@@ -16,9 +16,10 @@ const (
 
 // User represents a user in the soil monitoring system
 type User struct {
-	UserID   int    `json:"user_id"`
-	Username string `json:"username"`
-	Password string `json:"-"` // Never include password in JSON response
+	UserID     int    `json:"user_id"`
+	Username   string `json:"username"`
+	Password   string `json:"-"` // Never include password in JSON response
+	IsVerified bool   `json:"is_verified"`
 }
 
 // Node represents a soil monitoring IoT device

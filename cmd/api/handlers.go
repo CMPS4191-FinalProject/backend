@@ -810,8 +810,9 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 
 	// Create user
 	user := types.User{
-		Username: req.Username,
-		Password: EncodePasswordHash(passwordHash),
+		Username:   req.Username,
+		Password:   EncodePasswordHash(passwordHash),
+		IsVerified: false, // User starts as unverified
 	}
 
 	if err := database.ValidateUser(user); err != nil {
@@ -900,6 +901,12 @@ func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps h
 		return
 	}
 
+	// Check if user is verified
+	if !user.IsVerified {
+		http.Error(w, "Account not verified. Please verify your account first.", http.StatusForbidden)
+		return
+	}
+
 	// Generate JWT token
 	token, err := GenerateJWT(user)
 	if err != nil {
@@ -971,3 +978,37 @@ func (c *serverConfig) LogoutHandler(w http.ResponseWriter, r *http.Request, ps 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// VerifyHandler godoc
+// @Summary     Verify user account
+// @Description Verify a user account using the JWT token received during registration
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {object} map[string]string
+// @Failure     401 {object} ErrorResponse
+// @Failure     500 {object} ErrorResponse
+// @Router      /auth/verify [post]
+func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Get user from context (requireAuth middleware has already validated the token)
+	user, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Verify the user in the database
+	if err := c.db.VerifyUser(user.UserID); err != nil {
+		http.Error(w, "Failed to verify user: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"message": "Account successfully verified",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+

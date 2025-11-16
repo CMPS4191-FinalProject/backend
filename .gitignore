@@ -155,6 +155,9 @@ vite.config.ts.timestamp-*
 # Test binary, built with `go test -c`
 *.test
 
+# Go binary executables
+/api
+
 # Code coverage profiles and other test artifacts
 *.out
 coverage.*

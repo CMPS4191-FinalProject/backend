@@ -24,6 +24,7 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.POST(v("/auth/join"), c.RegisterHandler) // User registration
 	c.router.POST(v("/auth/login"), c.LoginHandler)   // User login
 	c.router.POST(v("/auth/logout"), c.LogoutHandler) // User logout
+	c.router.POST(v("/auth/verify"), c.requireAuth(c.VerifyHandler)) // Verify account
 
 	// Users (protected routes)
 	c.router.GET(v("/auth/me"), c.requireAuth(c.GetCurrentUserHandler))  // Get current user
