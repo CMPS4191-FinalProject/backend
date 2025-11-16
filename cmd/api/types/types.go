@@ -46,8 +46,14 @@ type NodeFavorite struct {
 
 // UserCreateRequest represents the request payload for creating a new user
 type UserCreateRequest struct {
+	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// UserVerifyRequest represents the request payload for verifying a user
+type UserVerifyRequest struct {
+	VerificationCode string `json:"verification_code"`
 }
 
 // UserUpdateRequest represents the request payload for updating a user

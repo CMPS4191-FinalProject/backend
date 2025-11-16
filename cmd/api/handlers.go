@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"qotd/cmd/api/database"
 	"qotd/cmd/api/types"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -776,7 +780,7 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 // @Accept      json
 // @Produce     json
 // @Param       user body types.UserCreateRequest true "User registration data"
-// @Success     201 {object} AuthResponse
+// @Success     201 {object} map[string]string "Check your email"
 // @Failure     400 {object} ErrorResponse
 // @Failure     409 {object} ErrorResponse
 // @Failure     500 {object} ErrorResponse
@@ -789,8 +793,8 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Validate input
-	if req.Username == "" || req.Password == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
+	if req.Username == "" || req.Password == "" || req.Email == "" {
+		http.Error(w, "Username, password, and email are required", http.StatusBadRequest)
 		return
 	}
 
@@ -841,11 +845,49 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 
 	// Return user info and token (excluding password)
 	response := map[string]interface{}{
-		"user": map[string]interface{}{
-			"user_id":  createdUser.UserID,
-			"username": createdUser.Username,
-		},
-		"token": token,
+		"message": "Check your email to verify your account.",
+	}
+
+	from := strings.TrimSpace(getEnvAsString("SMTP_SENDER_EMAIL", ""))
+	sender_username := strings.TrimSpace(getEnvAsString("SMTP_SENDER_USERNAME", ""))
+	password := getEnvAsString("SMTP_SENDER_PASSWORD", "")
+	to := strings.TrimSpace(req.Email)
+	smtpHost := getEnvAsString("SMTP_HOST", "smtp.gmail.com")
+	smtpPort := getEnvAsString("SMTP_PORT", "587")
+
+	if from == "" || password == "" {
+		c.logger.Error("SMTP credentials missing: check SMTP_SENDER_EMAIL and SMTP_SENDER_PASSWORD env vars")
+		http.Error(w, "Email service not configured", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := mail.ParseAddress(from); err != nil {
+		c.logger.Error("invalid SMTP sender address", "address", from, "error", err)
+		http.Error(w, "Email service misconfigured", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := mail.ParseAddress(to); err != nil {
+		c.logger.Error("invalid recipient email address", "address", to, "error", err)
+		http.Error(w, "Invalid recipient email address", http.StatusBadRequest)
+		return
+	}
+
+	// Message content
+	msg := []byte("From: " + from + "\r\n" +
+		"To: " + to + "\r\n" +
+		"Subject: Verification Token\r\n" +
+		"\r\n" +
+		token + "\r\n")
+
+	// Authentication
+	auth := smtp.PlainAuth("", sender_username, password, smtpHost)
+
+	// Send the email
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{to}, msg)
+	if err != nil {
+		fmt.Println("Error sending email:", err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -993,20 +1035,30 @@ func (c *serverConfig) LogoutHandler(w http.ResponseWriter, r *http.Request, ps 
 // @Accept      json
 // @Produce     json
 // @Security    Bearer
-// @Success     200 {object} map[string]string
+// @Param       verification body types.UserVerifyRequest true "Verification data"
+// @Success     200 {object} OkResponse
 // @Failure     401 {object} ErrorResponse
 // @Failure     500 {object} ErrorResponse
 // @Router      /auth/verify [post]
 func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Get user from context (requireAuth middleware has already validated the token)
-	user, ok := getUserFromContext(r)
-	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+	var verificationRequest types.UserVerifyRequest
+	if err := c.readRequestJSON(w, r, &verificationRequest); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract the token from the request
+	tokenString := verificationRequest.VerificationCode
+	// Parse and validate the token
+	user, err := GetUserIDFromJWT(tokenString)
+	if err != nil {
+		http.Error(w, "Invalid or expired token: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	// Verify the user in the database
-	if err := c.db.VerifyUser(user.UserID); err != nil {
+	if err := c.db.VerifyUser(user); err != nil {
 		http.Error(w, "Failed to verify user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -98,6 +98,12 @@ definitions:
         example: ONLINE
         type: string
     type: object
+  main.OkResponse:
+    properties:
+      message:
+        example: Operation successful
+        type: string
+    type: object
   main.PaginationResponse:
     properties:
       page:
@@ -156,6 +162,8 @@ definitions:
     type: object
   types.User:
     properties:
+      is_verified:
+        type: boolean
       user_id:
         type: integer
       username:
@@ -163,6 +171,8 @@ definitions:
     type: object
   types.UserCreateRequest:
     properties:
+      email:
+        type: string
       password:
         type: string
       username:
@@ -173,6 +183,11 @@ definitions:
       password:
         type: string
       username:
+        type: string
+    type: object
+  types.UserVerifyRequest:
+    properties:
+      verification_code:
         type: string
     type: object
 host: localhost:4000
@@ -205,9 +220,11 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: Check your email
           schema:
-            $ref: '#/definitions/main.AuthResponse'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
@@ -272,6 +289,38 @@ paths:
           schema:
             $ref: '#/definitions/main.ErrorResponse'
       summary: User logout
+      tags:
+      - auth
+  /auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify a user account using the JWT token received during registration
+      parameters:
+      - description: Verification data
+        in: body
+        name: verification
+        required: true
+        schema:
+          $ref: '#/definitions/types.UserVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.OkResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Verify user account
       tags:
       - auth
   /faucet:

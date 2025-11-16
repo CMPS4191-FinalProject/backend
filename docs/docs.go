@@ -50,9 +50,12 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Check your email",
                         "schema": {
-                            "$ref": "#/definitions/main.AuthResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -143,6 +146,57 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Verify a user account using the JWT token received during registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify user account",
+                "parameters": [
+                    {
+                        "description": "Verification data",
+                        "name": "verification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UserVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.OkResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1599,6 +1653,15 @@ const docTemplate = `{
                 }
             }
         },
+        "main.OkResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation successful"
+                }
+            }
+        },
         "main.PaginationResponse": {
             "type": "object",
             "properties": {
@@ -1684,6 +1747,9 @@ const docTemplate = `{
         "types.User": {
             "type": "object",
             "properties": {
+                "is_verified": {
+                    "type": "boolean"
+                },
                 "user_id": {
                     "type": "integer"
                 },
@@ -1695,6 +1761,9 @@ const docTemplate = `{
         "types.UserCreateRequest": {
             "type": "object",
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -1710,6 +1779,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.UserVerifyRequest": {
+            "type": "object",
+            "properties": {
+                "verification_code": {
                     "type": "string"
                 }
             }

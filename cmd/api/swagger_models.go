@@ -6,6 +6,11 @@ type ErrorResponse struct {
 	Message string `json:"message,omitempty" example:"Detailed error message"`
 }
 
+// OkResponse represents a successful operation response
+type OkResponse struct {
+	Message string `json:"message" example:"Operation successful"`
+}
+
 // AuthResponse represents authentication response
 type AuthResponse struct {
 	User  AuthUser `json:"user"`
