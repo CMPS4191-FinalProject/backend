@@ -506,24 +506,24 @@ func (c *serverConfig) GetNodeDataHandler(w http.ResponseWriter, r *http.Request
 // @Failure     404 {object} ErrorResponse
 // @Failure     500 {object} ErrorResponse
 // @Router      /nodedata/{id} [get]
-func (c *serverConfig) GetNodeDataByIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// Extract the node data ID from the URL parameters
-	idStr := ps.ByName("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
-		return
-	}
+// func (c *serverConfig) GetNodeDataByIDHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// 	// Extract the node data ID from the URL parameters
+// 	idStr := ps.ByName("id")
+// 	id, err := strconv.Atoi(idStr)
+// 	if err != nil {
+// 		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+// 		return
+// 	}
 
-	nodeData, err := c.db.GetNodeDataByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
+// 	nodeData, err := c.db.GetNodeDataByID(id)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusNotFound)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(nodeData)
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(nodeData)
+// }
 
 // GetNodeDataByDeviceIDHandler godoc
 // @Summary     Get sensor data by device ID

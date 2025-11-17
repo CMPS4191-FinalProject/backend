@@ -328,6 +328,18 @@ func (c *Client) readPump() {
 					deviceUpdate["error_details"] = &errorDetails
 				}
 				moistureValue := deviceUpdate["moisture_content"].(float64)
+
+				nodeData := types.NodeData{
+					UserID:          deviceUpdate["user_id"].(int),
+					DeviceID:        deviceUpdate["device_id"].(int),
+					MoistureContent: &moistureValue,
+					Timestamp:       time.Now(),
+				}
+
+				if err := hub.db.CreateNodeData(nodeData); err != nil {
+					return
+				}
+
 				BroadcastSensorData(deviceUpdate["user_id"].(int), deviceUpdate["device_id"].(int), &moistureValue)
 			}
 		default:
