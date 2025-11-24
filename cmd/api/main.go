@@ -98,6 +98,13 @@ func main() {
 	// Initialize WebSocket hub with database access
 	InitWebSocketHub(config.db)
 
+	// Initialize test users for demo (only in development with in-memory DB)
+	if config.env == "development" && dbType == "IN_MEMORY" {
+		if err := InitTestUsers(&config); err != nil {
+			config.logger.Error("failed to initialize test users", "error", err)
+		}
+	}
+
 	// Create HTTP server
 	server := &http.Server{
 		Addr:         ":" + fmt.Sprint(config.port),

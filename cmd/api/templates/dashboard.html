@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard - Soil Quality Monitor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"></script>
+    <style>
+        .message-log {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .message-entry {
+            border-bottom: 1px solid #eee;
+            padding: 8px;
+        }
+        .message-entry:hover {
+            background-color: #f5f5f5;
+        }
+        .metric-box {
+            text-align: center;
+            padding: 20px;
+        }
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3273dc;
+        }
+        .metric-label {
+            font-size: 1em;
+            color: #7a7a7a;
+            margin-top: 5px;
+        }
+        #loginModal {
+            display: none;
+        }
+        #loginModal.is-active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Login Required</p>
+            </header>
+            <section class="modal-card-body">
+                <div id="loginError" class="notification is-danger" style="display: none;"></div>
+                <div class="field">
+                    <label class="label">Username</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" id="username" placeholder="Enter username">
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-user"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Password</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="password" id="password" placeholder="Enter password">
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-primary" onclick="login()">Login</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    Admin Dashboard
+                </h1>
+                <h2 class="subtitle">
+                    Real-time WebSocket Monitoring
+                </h2>
+                <div id="userInfo" style="display: none;">
+                    <p>Logged in as: <strong id="currentUser"></strong> (<span id="currentRole"></span>)</p>
+                    <button class="button is-light is-small" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <!-- Metrics Cards -->
+            <div class="columns">
+                <div class="column">
+                    <div class="box metric-box">
+                        <div class="metric-value" id="activeConnections">0</div>
+                        <div class="metric-label">Active Connections</div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="box metric-box">
+                        <div class="metric-value" id="totalMessages">0</div>
+                        <div class="metric-label">Total Messages</div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="box metric-box">
+                        <div class="metric-value" id="messageRate">0.0</div>
+                        <div class="metric-label">Messages/Second</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Log (Hawk-eye View) -->
+            <div class="box" id="hawkEyeSection" style="display: none;">
+                <h2 class="title is-4">
+                    <span class="icon-text">
+                        <span class="icon">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                        <span>Hawk-eye View - Recent WebSocket Messages</span>
+                    </span>
+                </h2>
+                <div class="message-log" id="messageLog">
+                    <div class="has-text-centered has-text-grey-light">
+                        <p>Loading messages...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User-specific view for non-admin users -->
+            <div class="box" id="userSection" style="display: none;">
+                <h2 class="title is-4">WebSocket Metrics</h2>
+                <div class="notification is-info">
+                    <p>You are viewing the WebSocket metrics. Admin users have access to the full message log.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const API_VERSION = 'v1';
+        let isAdmin = false;
+
+        // Check authentication on page load
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showLoginModal();
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/${API_VERSION}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('currentUser').textContent = user.username;
+                    document.getElementById('currentRole').textContent = user.role;
+                    document.getElementById('userInfo').style.display = 'block';
+                    
+                    // Check if user is admin
+                    isAdmin = user.role === 'admin';
+                    
+                    if (isAdmin) {
+                        document.getElementById('hawkEyeSection').style.display = 'block';
+                    } else {
+                        document.getElementById('userSection').style.display = 'block';
+                    }
+                    
+                    return true;
+                } else {
+                    localStorage.removeItem('token');
+                    showLoginModal();
+                    return false;
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showLoginModal();
+                return false;
+            }
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('is-active');
+        }
+
+        function hideLoginModal() {
+            document.getElementById('loginModal').classList.remove('is-active');
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Please enter both username and password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/${API_VERSION}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    errorDiv.style.display = 'none';
+                    hideLoginModal();
+                    window.location.reload();
+                } else {
+                    const error = await response.text();
+                    errorDiv.textContent = error || 'Login failed';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Network error: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.reload();
+        }
+
+        // Fetch and update metrics
+        async function updateMetrics() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                // Fetch metrics (available to all authenticated users)
+                const metricsResponse = await fetch(`${API_BASE}/${API_VERSION}/metrics`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (metricsResponse.ok) {
+                    const metrics = await metricsResponse.json();
+                    document.getElementById('activeConnections').textContent = metrics.ActiveConnections || 0;
+                    document.getElementById('totalMessages').textContent = metrics.TotalMessages || 0;
+                    document.getElementById('messageRate').textContent = (metrics.MessageRate || 0).toFixed(2);
+                }
+
+                // Fetch message log (admin only)
+                if (isAdmin) {
+                    const logResponse = await fetch(`${API_BASE}/${API_VERSION}/metrics/messages`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (logResponse.ok) {
+                        const messages = await logResponse.json();
+                        updateMessageLog(messages);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update metrics:', error);
+            }
+        }
+
+        function updateMessageLog(messages) {
+            const logDiv = document.getElementById('messageLog');
+            
+            if (!messages || messages.length === 0) {
+                logDiv.innerHTML = '<div class="has-text-centered has-text-grey-light"><p>No messages yet</p></div>';
+                return;
+            }
+
+            // Reverse to show newest first
+            const reversedMessages = [...messages].reverse();
+            
+            logDiv.innerHTML = reversedMessages.map(msg => {
+                const timestamp = new Date(msg.timestamp).toLocaleTimeString();
+                const username = msg.username || `User ${msg.user_id}`;
+                const data = msg.data ? JSON.stringify(msg.data, null, 2) : '';
+                
+                return `
+                    <div class="message-entry">
+                        <div>
+                            <strong>[${timestamp}]</strong>
+                            <span class="tag is-info is-light">${username}</span>
+                            <span class="tag is-primary is-light">${msg.type}</span>
+                        </div>
+                        <div style="margin-top: 5px;">
+                            ${msg.message}
+                            ${data ? `<pre style="margin-top: 5px; font-size: 0.8em;">${data}</pre>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Allow Enter key to submit login
+        document.getElementById('password').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        });
+
+        // Initialize dashboard
+        async function init() {
+            const authenticated = await checkAuth();
+            if (authenticated) {
+                // Initial metrics load
+                await updateMetrics();
+                
+                // Update metrics every 2 seconds
+                setInterval(updateMetrics, 2000);
+            }
+        }
+
+        // Start the dashboard
+        init();
+    </script>
+</body>
+</html>

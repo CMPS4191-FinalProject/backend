@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"qotd/cmd/api/database"
 	"qotd/cmd/api/types"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -41,11 +43,33 @@ type Client struct {
 
 // Hub maintains the set of active clients and broadcasts messages to the clients
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan FaucetMessage
-	register   chan *Client
-	unregister chan *Client
-	db         *database.Database
+	clients      map[*Client]bool
+	broadcast    chan FaucetMessage
+	register     chan *Client
+	unregister   chan *Client
+	db           *database.Database
+	metrics      *WebSocketMetrics
+	messageLog   []MessageLogEntry
+	messageLogMu sync.RWMutex
+}
+
+// WebSocketMetrics tracks WebSocket usage
+type WebSocketMetrics struct {
+	ActiveConnections int64
+	TotalMessages     int64
+	MessageRate       float64 // messages per second
+	LastUpdated       time.Time
+	mu                sync.RWMutex
+}
+
+// MessageLogEntry represents a logged WebSocket message
+type MessageLogEntry struct {
+	Timestamp time.Time      `json:"timestamp"`
+	UserID    int            `json:"user_id"`
+	Username  string         `json:"username,omitempty"`
+	Type      string         `json:"type"`
+	Message   string         `json:"message"`
+	Data      any            `json:"data,omitempty"`
 }
 
 // Create a global hub instance
@@ -59,8 +83,13 @@ func InitWebSocketHub(db *database.Database) {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		db:         db,
+		metrics: &WebSocketMetrics{
+			LastUpdated: time.Now(),
+		},
+		messageLog: make([]MessageLogEntry, 0),
 	}
 	go hub.Run()
+	go hub.updateMetrics()
 	log.Println("WebSocket hub initialized and running")
 }
 
@@ -70,6 +99,7 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
+			h.updateActiveConnections()
 			log.Printf("WebSocket client registered. Total clients: %d", len(h.clients))
 
 			// Send welcome message
@@ -89,10 +119,14 @@ func (h *Hub) Run() {
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
+				h.updateActiveConnections()
 				log.Printf("WebSocket client unregistered. Total clients: %d", len(h.clients))
 			}
 
 		case message := <-h.broadcast:
+			h.incrementMessageCount()
+			h.logMessage(message)
+
 			// For sensor data messages, only send to users who have favorited the device
 			if message.Type == "sensor_data" {
 				for client := range h.clients {
@@ -347,6 +381,96 @@ func (c *Client) readPump() {
 			hub.broadcast <- msg
 		}
 	}
+}
+
+// updateActiveConnections updates the active connections metric
+func (h *Hub) updateActiveConnections() {
+	h.metrics.mu.Lock()
+	defer h.metrics.mu.Unlock()
+	h.metrics.ActiveConnections = int64(len(h.clients))
+	h.metrics.LastUpdated = time.Now()
+}
+
+// incrementMessageCount increments the total message count
+func (h *Hub) incrementMessageCount() {
+	h.metrics.mu.Lock()
+	defer h.metrics.mu.Unlock()
+	h.metrics.TotalMessages++
+}
+
+// updateMetrics periodically calculates message rate
+func (h *Hub) updateMetrics() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	lastCount := int64(0)
+
+	for range ticker.C {
+		h.metrics.mu.Lock()
+		currentCount := h.metrics.TotalMessages
+		h.metrics.MessageRate = float64(currentCount - lastCount)
+		lastCount = currentCount
+		h.metrics.LastUpdated = time.Now()
+		h.metrics.mu.Unlock()
+	}
+}
+
+// logMessage logs a message for the hawk-eye view (keep last 100 messages)
+func (h *Hub) logMessage(msg FaucetMessage) {
+	h.messageLogMu.Lock()
+	defer h.messageLogMu.Unlock()
+
+	// Username should already be included in the message if available
+	// No need to query database here for performance reasons
+	username := ""
+	if msg.UserID > 0 {
+		username = fmt.Sprintf("User %d", msg.UserID)
+	}
+
+	entry := MessageLogEntry{
+		Timestamp: msg.Timestamp,
+		UserID:    msg.UserID,
+		Username:  username,
+		Type:      msg.Type,
+		Message:   msg.Message,
+		Data:      msg.Data,
+	}
+
+	h.messageLog = append(h.messageLog, entry)
+
+	// Keep only last 100 messages
+	if len(h.messageLog) > 100 {
+		h.messageLog = h.messageLog[len(h.messageLog)-100:]
+	}
+}
+
+// GetMetrics returns current WebSocket metrics
+func GetMetrics() *WebSocketMetrics {
+	if hub == nil {
+		return &WebSocketMetrics{}
+	}
+	hub.metrics.mu.RLock()
+	defer hub.metrics.mu.RUnlock()
+
+	return &WebSocketMetrics{
+		ActiveConnections: hub.metrics.ActiveConnections,
+		TotalMessages:     hub.metrics.TotalMessages,
+		MessageRate:       hub.metrics.MessageRate,
+		LastUpdated:       hub.metrics.LastUpdated,
+	}
+}
+
+// GetMessageLog returns recent WebSocket messages
+func GetMessageLog() []MessageLogEntry {
+	if hub == nil {
+		return []MessageLogEntry{}
+	}
+	hub.messageLogMu.RLock()
+	defer hub.messageLogMu.RUnlock()
+
+	// Return a copy of the log
+	logCopy := make([]MessageLogEntry, len(hub.messageLog))
+	copy(logCopy, hub.messageLog)
+	return logCopy
 }
 
 // writePump pumps messages from the hub to the websocket connection
