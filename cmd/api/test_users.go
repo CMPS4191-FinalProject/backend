@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 )
 
 // InitTestUsers creates test users for demo purposes

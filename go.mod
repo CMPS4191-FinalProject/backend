@@ -1,4 +1,4 @@
-module qotd
+module sma
 
 go 1.25.0
 

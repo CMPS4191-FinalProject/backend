@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"qotd/cmd/api/database"
-	_ "qotd/docs" // This imports the generated docs
+	"sma/cmd/api/database"
+	_ "sma/docs" // This imports the generated docs
 	"syscall"
 	"time"
 

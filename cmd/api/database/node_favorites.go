@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 )
 
 // GetNodeFavorites fetches all node favorites from the database

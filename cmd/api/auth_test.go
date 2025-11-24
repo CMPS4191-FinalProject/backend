@@ -1,7 +1,7 @@
 package main
 
 import (
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 	"strings"
 	"testing"
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 	"strconv"
 	"strings"
 	"sync"

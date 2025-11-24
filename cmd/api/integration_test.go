@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"qotd/cmd/api/database"
+	"sma/cmd/api/database"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"

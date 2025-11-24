@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 	"time"
 
 	_ "github.com/lib/pq"

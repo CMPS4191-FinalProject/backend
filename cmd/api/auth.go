@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/types"
 	"strings"
 	"time"
 

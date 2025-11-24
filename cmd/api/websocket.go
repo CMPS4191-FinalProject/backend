@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"qotd/cmd/api/database"
-	"qotd/cmd/api/types"
+	"sma/cmd/api/database"
+	"sma/cmd/api/types"
 	"sync"
 	"time"
 
@@ -64,12 +64,12 @@ type WebSocketMetrics struct {
 
 // MessageLogEntry represents a logged WebSocket message
 type MessageLogEntry struct {
-	Timestamp time.Time      `json:"timestamp"`
-	UserID    int            `json:"user_id"`
-	Username  string         `json:"username,omitempty"`
-	Type      string         `json:"type"`
-	Message   string         `json:"message"`
-	Data      any            `json:"data,omitempty"`
+	Timestamp time.Time `json:"timestamp"`
+	UserID    int       `json:"user_id"`
+	Username  string    `json:"username,omitempty"`
+	Type      string    `json:"type"`
+	Message   string    `json:"message"`
+	Data      any       `json:"data,omitempty"`
 }
 
 // Create a global hub instance
