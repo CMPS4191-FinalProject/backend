@@ -132,6 +132,18 @@ func (c *serverConfig) GetUserHandler(w http.ResponseWriter, r *http.Request, ps
 		return
 	}
 
+	// Check authorization: users can only view themselves, admins can view anyone
+	currentUser, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	if currentUser.Role != types.RoleAdmin && currentUser.UserID != id {
+		http.Error(w, "Access denied: you can only view your own profile", http.StatusForbidden)
+		return
+	}
+
 	user, err := c.db.GetUserByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -165,11 +177,36 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "Invalid ID format", http.StatusBadRequest)
 		return
 	}
+
+	// Check authorization: users can only update themselves, admins can update anyone
+	currentUser, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	if currentUser.Role != types.RoleAdmin && currentUser.UserID != id {
+		http.Error(w, "Access denied: you can only update your own profile", http.StatusForbidden)
+		return
+	}
+
 	var updatedUser types.User
 	if err := c.readRequestJSON(w, r, &updatedUser); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Prevent non-admin users from changing their role
+	existingUser, err := c.db.GetUserByID(id)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	if currentUser.Role != types.RoleAdmin {
+		updatedUser.Role = existingUser.Role // Keep existing role
+	}
+
 	if err := database.ValidateUser(updatedUser); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -583,6 +620,18 @@ func (c *serverConfig) GetNodeDataByUserIDHandler(w http.ResponseWriter, r *http
 		return
 	}
 
+	// Check authorization: users can only view their own data, admins can view anyone's
+	currentUser, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	if currentUser.Role != types.RoleAdmin && currentUser.UserID != userID {
+		http.Error(w, "Access denied: you can only view your own data", http.StatusForbidden)
+		return
+	}
+
 	nodeData, err := c.db.GetNodeDataByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -718,6 +767,18 @@ func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r 
 	userID, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+		return
+	}
+
+	// Check authorization: users can only view their own favorites, admins can view anyone's
+	currentUser, ok := getUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	if currentUser.Role != types.RoleAdmin && currentUser.UserID != userID {
+		http.Error(w, "Access denied: you can only view your own favorites", http.StatusForbidden)
 		return
 	}
 

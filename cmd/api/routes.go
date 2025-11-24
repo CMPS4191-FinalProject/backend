@@ -27,12 +27,12 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.POST(v("/auth/verify"), c.requireAuth(c.VerifyHandler)) // Verify account
 
 	// Users (protected routes)
-	c.router.GET(v("/auth/me"), c.requireAuth(c.GetCurrentUserHandler))  // Get current user
-	c.router.POST(v("/users"), c.requireAuth(c.CreateUserHandler))       // Create user
-	c.router.GET(v("/users"), c.requireAuth(c.GetUsersHandler))          // List users
-	c.router.GET(v("/users/:id"), c.requireAuth(c.GetUserHandler))       // Get user by ID
-	c.router.PUT(v("/users/:id"), c.requireAuth(c.UpdateUserHandler))    // Update user
-	c.router.DELETE(v("/users/:id"), c.requireAuth(c.DeleteUserHandler)) // Delete user
+	c.router.GET(v("/auth/me"), c.requireAuth(c.GetCurrentUserHandler))    // Get current user
+	c.router.POST(v("/users"), c.requireAdmin(c.CreateUserHandler))        // Create user (admin only)
+	c.router.GET(v("/users"), c.requireAdmin(c.GetUsersHandler))           // List users (admin only)
+	c.router.GET(v("/users/:id"), c.requireAuth(c.GetUserHandler))         // Get user by ID (self or admin)
+	c.router.PUT(v("/users/:id"), c.requireAuth(c.UpdateUserHandler))      // Update user (self or admin)
+	c.router.DELETE(v("/users/:id"), c.requireAdmin(c.DeleteUserHandler))  // Delete user (admin only)
 
 	// Nodes (IoT devices) - protected routes
 	c.router.POST(v("/nodes"), c.requireAuth(c.CreateNodeHandler))       // Create node
