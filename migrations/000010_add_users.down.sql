@@ -1,0 +1,1 @@
+DELETE FROM "Users" WHERE "username" IN ('admin', 'user');

@@ -1,0 +1,1 @@
+ALTER TABLE "NodeData" ALTER COLUMN "user_id" DROP DEFAULT;
