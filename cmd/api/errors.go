@@ -10,7 +10,7 @@ func (c *serverConfig) errorResponse(w http.ResponseWriter, r *http.Request, sta
 
 	err := c.writeResponseJSON(w, status, env, nil)
 	if err != nil {
-		c.logger.Error(err.Error(), nil)
+		c.logger.Error(err.Error())
 		w.WriteHeader(500)
 	}
 }
