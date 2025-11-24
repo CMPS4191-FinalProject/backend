@@ -817,6 +817,7 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 		Username:   req.Username,
 		Password:   EncodePasswordHash(passwordHash),
 		IsVerified: false, // User starts as unverified
+		Role:       types.RoleUser,
 	}
 
 	if err := database.ValidateUser(user); err != nil {
@@ -1069,4 +1070,48 @@ func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// GetMetricsHandler godoc
+// @Summary     Get WebSocket metrics
+// @Description Get real-time WebSocket metrics (admin only)
+// @Tags        metrics
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {object} map[string]interface{}
+// @Failure     401 {object} ErrorResponse
+// @Failure     403 {object} ErrorResponse
+// @Router      /metrics [get]
+func (c *serverConfig) GetMetricsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+metrics := GetMetrics()
+w.Header().Set("Content-Type", "application/json")
+json.NewEncoder(w).Encode(metrics)
+}
+
+// GetMessageLogHandler godoc
+// @Summary     Get WebSocket message log
+// @Description Get recent WebSocket messages (admin only, hawk-eye view)
+// @Tags        metrics
+// @Accept      json
+// @Produce     json
+// @Security    Bearer
+// @Success     200 {array} MessageLogEntry
+// @Failure     401 {object} ErrorResponse
+// @Failure     403 {object} ErrorResponse
+// @Router      /metrics/messages [get]
+func (c *serverConfig) GetMessageLogHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+messageLog := GetMessageLog()
+w.Header().Set("Content-Type", "application/json")
+json.NewEncoder(w).Encode(messageLog)
+}
+
+// DashboardHandler serves the admin dashboard
+func (c *serverConfig) DashboardHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+http.ServeFile(w, r, "cmd/api/templates/dashboard.html")
+}
+
+// DashboardLoginHandler serves the login page (redirect to main dashboard which handles login)
+func (c *serverConfig) DashboardLoginHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+http.Redirect(w, r, "/dashboard", http.StatusFound)
 }

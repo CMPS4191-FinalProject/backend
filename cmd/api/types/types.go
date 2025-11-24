@@ -14,12 +14,21 @@ const (
 	NodeStatusError   NodeStatus = "ERROR"
 )
 
+// UserRole represents a user's role in the system
+type UserRole string
+
+const (
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
+)
+
 // User represents a user in the soil monitoring system
 type User struct {
-	UserID     int    `json:"user_id"`
-	Username   string `json:"username"`
-	Password   string `json:"-"` // Never include password in JSON response
-	IsVerified bool   `json:"is_verified"`
+	UserID     int      `json:"user_id"`
+	Username   string   `json:"username"`
+	Password   string   `json:"-"` // Never include password in JSON response
+	IsVerified bool     `json:"is_verified"`
+	Role       UserRole `json:"role"`
 }
 
 // Node represents a soil monitoring IoT device

@@ -28,8 +28,9 @@ const (
 
 // AuthClaims represents JWT claims for authentication
 type AuthClaims struct {
-	UserID   int    `json:"user_id"`
-	Username string `json:"username"`
+	UserID   int            `json:"user_id"`
+	Username string         `json:"username"`
+	Role     types.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -82,6 +83,7 @@ func GenerateJWT(user *types.User) (string, error) {
 	claims := AuthClaims{
 		UserID:   user.UserID,
 		Username: user.Username,
+		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Token expires in 24 hours
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

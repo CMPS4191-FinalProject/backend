@@ -57,5 +57,13 @@ func (c *serverConfig) routes() http.Handler {
 	// WebSocket faucet endpoint (protected)
 	c.router.GET(v("/faucet"), c.requireAuth(c.FaucetHandler))
 
+	// Metrics endpoints (admin only)
+	c.router.GET(v("/metrics"), c.requireAdmin(c.GetMetricsHandler))
+	c.router.GET(v("/metrics/messages"), c.requireAdmin(c.GetMessageLogHandler))
+
+	// Dashboard routes (static HTML served with authentication check)
+	c.router.GET("/dashboard", c.DashboardHandler)
+	c.router.GET("/dashboard/login", c.DashboardLoginHandler)
+
 	return c.middleware(c.router)
 }

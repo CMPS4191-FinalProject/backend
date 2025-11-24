@@ -58,7 +58,7 @@ func (db *Database) GetUsersWithPagination(limit, offset int, sortBy, sortOrder 
 	case Postgres:
 		// Build the query with sorting and pagination
 		query := `
-			SELECT user_id, username, password, is_verified
+			SELECT user_id, username, password, is_verified, COALESCE(role, 'user') as role
 			FROM "Users"
 		`
 
@@ -98,7 +98,7 @@ func (db *Database) GetUsersWithPagination(limit, offset int, sortBy, sortOrder 
 		var users []types.User
 		for rows.Next() {
 			var u types.User
-			if err := rows.Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified); err != nil {
+			if err := rows.Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified, &u.Role); err != nil {
 				return nil, err
 			}
 			users = append(users, u)
@@ -120,16 +120,25 @@ func (db *Database) CreateUser(user types.User) error {
 			}
 		}
 		user.UserID = lastID + 1
+		// Set default role if not specified
+		if user.Role == "" {
+			user.Role = types.RoleUser
+		}
 		InMemoryUsers = append(InMemoryUsers, user)
 		return nil
 	case Postgres:
 		// Create user in Postgres database
 		query := `
-			INSERT INTO "Users" (username, password, is_verified)
-			VALUES ($1, $2, $3)
+			INSERT INTO "Users" (username, password, is_verified, role)
+			VALUES ($1, $2, $3, $4)
 			RETURNING user_id
 		`
-		args := []any{user.Username, user.Password, user.IsVerified}
+		// Set default role if not specified
+		role := user.Role
+		if role == "" {
+			role = types.RoleUser
+		}
+		args := []any{user.Username, user.Password, user.IsVerified, role}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 
@@ -155,7 +164,7 @@ func (db *Database) GetUserByID(userID int) (*types.User, error) {
 	case Postgres:
 		// Fetch user by ID from Postgres database
 		query := `
-			SELECT user_id, username, password, is_verified
+			SELECT user_id, username, password, is_verified, COALESCE(role, 'user') as role
 			FROM "Users"
 			WHERE user_id = $1
 		`
@@ -163,7 +172,7 @@ func (db *Database) GetUserByID(userID int) (*types.User, error) {
 		defer cancel()
 
 		var u types.User
-		err := db.context.QueryRowContext(ctx, query, userID).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified)
+		err := db.context.QueryRowContext(ctx, query, userID).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified, &u.Role)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +194,7 @@ func (db *Database) GetUserByUsername(username string) (*types.User, error) {
 	case Postgres:
 		// Fetch user by username from Postgres database
 		query := `
-			SELECT user_id, username, password, is_verified
+			SELECT user_id, username, password, is_verified, COALESCE(role, 'user') as role
 			FROM "Users"
 			WHERE username = $1
 		`
@@ -193,7 +202,7 @@ func (db *Database) GetUserByUsername(username string) (*types.User, error) {
 		defer cancel()
 
 		var u types.User
-		err := db.context.QueryRowContext(ctx, query, username).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified)
+		err := db.context.QueryRowContext(ctx, query, username).Scan(&u.UserID, &u.Username, &u.Password, &u.IsVerified, &u.Role)
 		if err != nil {
 			return nil, err
 		}
@@ -218,10 +227,10 @@ func (db *Database) UpdateUser(userID int, user types.User) error {
 		// Update user in Postgres database
 		query := `
 			UPDATE "Users"
-			SET username = $1, password = $2, is_verified = $3
-			WHERE user_id = $4
+			SET username = $1, password = $2, is_verified = $3, role = $4
+			WHERE user_id = $5
 		`
-		args := []any{user.Username, user.Password, user.IsVerified, userID}
+		args := []any{user.Username, user.Password, user.IsVerified, user.Role, userID}
 		ctx, cancel := context.WithTimeout(context.Background(), db.queryTimeout)
 		defer cancel()
 		_, err := db.context.ExecContext(ctx, query, args...)

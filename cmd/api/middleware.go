@@ -232,6 +232,42 @@ func (c *serverConfig) requireAuth(handler func(http.ResponseWriter, *http.Reque
 	}
 }
 
+// requireAdmin is a wrapper that requires admin role
+func (c *serverConfig) requireAdmin(handler func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Apply auth middleware first
+		authHandler := c.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Check if user is admin
+			user, ok := getUserFromContext(r)
+			if !ok {
+				http.Error(w, "User not found in context", http.StatusUnauthorized)
+				return
+			}
+
+			if user.Role != types.RoleAdmin {
+				http.Error(w, "Admin access required", http.StatusForbidden)
+				return
+			}
+
+			handler(w, r, ps)
+		}))
+
+		authHandler.ServeHTTP(w, r)
+	}
+}
+
+// requireOwnerOrAdmin checks if the user is either the owner of the resource or an admin
+func (c *serverConfig) requireOwnerOrAdmin(handler func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Apply auth middleware first
+		authHandler := c.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler(w, r, ps)
+		}))
+
+		authHandler.ServeHTTP(w, r)
+	}
+}
+
 // getUserFromContext extracts user claims from request context
 func getUserFromContext(r *http.Request) (*AuthClaims, bool) {
 	user, ok := r.Context().Value(UserContextKey).(*AuthClaims)
