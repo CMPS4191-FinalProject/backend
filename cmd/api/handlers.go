@@ -1030,15 +1030,15 @@ func (c *serverConfig) LogoutHandler(w http.ResponseWriter, r *http.Request, ps 
 		Name:     "authorization",
 		Value:    "",
 		Path:     "/",
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   getEnvAsBool("HTTPS_ENABLED", false),
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   -1, // Immediately expire the cookie
 	}
 
 	// In development, use same settings as login
 	if getEnvAsString("ENVIRONMENT", "development") == "development" {
-		cookie.SameSite = http.SameSiteLaxMode
+		cookie.SameSite = http.SameSiteNoneMode
 		cookie.Secure = false
 	}
 
@@ -1107,9 +1107,9 @@ func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps 
 // @Failure     403 {object} ErrorResponse
 // @Router      /metrics [get]
 func (c *serverConfig) GetMetricsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-metrics := GetMetrics()
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(metrics)
+	metrics := GetMetrics()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
 }
 
 // GetMessageLogHandler godoc
@@ -1124,17 +1124,17 @@ json.NewEncoder(w).Encode(metrics)
 // @Failure     403 {object} ErrorResponse
 // @Router      /metrics/messages [get]
 func (c *serverConfig) GetMessageLogHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-messageLog := GetMessageLog()
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(messageLog)
+	messageLog := GetMessageLog()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messageLog)
 }
 
 // DashboardHandler serves the admin dashboard
 func (c *serverConfig) DashboardHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-http.ServeFile(w, r, "cmd/api/templates/dashboard.html")
+	http.ServeFile(w, r, "cmd/api/templates/dashboard.html")
 }
 
 // DashboardLoginHandler serves the login page (redirect to main dashboard which handles login)
 func (c *serverConfig) DashboardLoginHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-http.Redirect(w, r, "/dashboard", http.StatusFound)
+	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }
