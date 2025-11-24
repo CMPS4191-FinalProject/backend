@@ -24,3 +24,23 @@ func (c *serverConfig) methodNotAllowedResponse(w http.ResponseWriter, r *http.R
 	message := fmt.Sprintf("The %s method is not supported for this resource", r.Method)
 	c.errorResponse(w, r, http.StatusMethodNotAllowed, message)
 }
+
+func (c *serverConfig) badRequestResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusBadRequest, message)
+}
+
+func (c *serverConfig) unauthorizedResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
+func (c *serverConfig) forbiddenResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+func (c *serverConfig) internalServerErrorResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusInternalServerError, message)
+}
+
+func (c *serverConfig) tooManyRequestsResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusTooManyRequests, message)
+}

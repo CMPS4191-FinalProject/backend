@@ -103,8 +103,8 @@ func (c *serverConfig) rateLimitMiddleware(next http.Handler) http.Handler {
 		limiter := getRateLimiter(clientIP)
 
 		if !limiter.Allow() {
-			http.Error(w, "Rate limit exceeded. Please try again later.", http.StatusTooManyRequests)
 			c.logger.Error("[RL] ip: ", clientIP, " Rate limit exceeded")
+			c.tooManyRequestsResponse(w, r, "Rate limit exceeded. Please try again later.")
 			return
 		}
 
@@ -194,7 +194,7 @@ func (c *serverConfig) authMiddleware(next http.Handler) http.Handler {
 			if cookie, err := r.Cookie("authorization"); err == nil && cookie.Value != "" {
 				authHeader = "Bearer " + cookie.Value
 			} else {
-				http.Error(w, "You're not logged in.", http.StatusUnauthorized)
+				c.unauthorizedResponse(w, r, "You're not logged in.")
 				return
 			}
 		}
@@ -202,14 +202,14 @@ func (c *serverConfig) authMiddleware(next http.Handler) http.Handler {
 		// Extract token from header
 		token, err := ExtractTokenFromHeader(authHeader)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			c.unauthorizedResponse(w, r, err.Error())
 			return
 		}
 
 		// Validate token
 		claims, err := ValidateJWT(token)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			c.unauthorizedResponse(w, r, "Invalid token")
 			return
 		}
 
@@ -263,12 +263,12 @@ func (c *serverConfig) adminMiddleware(next http.Handler) http.Handler {
 		// Get user from context (set by authMiddleware)
 		user, ok := getUserFromContext(r)
 		if !ok {
-			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			c.unauthorizedResponse(w, r, "User not found in context")
 			return
 		}
 		// Check if user is admin
 		if user.Role != types.RoleAdmin {
-			http.Error(w, "Admin access required", http.StatusForbidden)
+			c.forbiddenResponse(w, r, "Admin access required")
 			return
 		}
 
@@ -282,7 +282,7 @@ func (c *serverConfig) ownerOrAdminMiddleware(next http.Handler, ps httprouter.P
 		// Get user from context (set by authMiddleware)
 		user, ok := getUserFromContext(r)
 		if !ok {
-			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			c.unauthorizedResponse(w, r, "User not found in context")
 			return
 		}
 
@@ -298,13 +298,13 @@ func (c *serverConfig) ownerOrAdminMiddleware(next http.Handler, ps httprouter.P
 		}
 
 		if err != nil {
-			http.Error(w, "Invalid ID format", http.StatusBadRequest)
+			c.badRequestResponse(w, r, "Invalid ID format")
 			return
 		}
 
 		// Allow if user is admin or if they're accessing their own resource
 		if user.Role != types.RoleAdmin && user.UserID != resourceOwnerID {
-			http.Error(w, "Access denied: you can only access your own resources", http.StatusForbidden)
+			c.forbiddenResponse(w, r, "Access denied: you can only access your own resources")
 			return
 		}
 
