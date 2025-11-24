@@ -234,7 +234,7 @@ func (c *serverConfig) FaucetHandler(w http.ResponseWriter, r *http.Request, ps 
 	// Extract user from context (set by auth middleware)
 	user, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 
