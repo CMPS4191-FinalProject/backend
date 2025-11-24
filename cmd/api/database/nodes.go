@@ -109,7 +109,7 @@ func (db *Database) GetNodesWithPagination(limit, offset int, sortBy, sortOrder 
 }
 
 // CreateNode creates a new node in the database
-func (db *Database) CreateNode(node types.Node) error {
+func (db *Database) CreateNode(node *types.Node) error {
 	switch db.dbType {
 	case InMemory:
 		// Find the last node's ID and assign the next ID
@@ -120,7 +120,7 @@ func (db *Database) CreateNode(node types.Node) error {
 			}
 		}
 		node.DeviceID = lastID + 1
-		InMemoryNodes = append(InMemoryNodes, node)
+		InMemoryNodes = append(InMemoryNodes, *node)
 		return nil
 	case Postgres:
 		// Create node in Postgres database

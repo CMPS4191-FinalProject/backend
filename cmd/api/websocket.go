@@ -370,7 +370,7 @@ func (c *Client) readPump() {
 					Timestamp:       time.Now(),
 				}
 
-				if err := hub.db.CreateNodeData(nodeData); err != nil {
+				if err := hub.db.CreateNodeData(&nodeData); err != nil {
 					return
 				}
 

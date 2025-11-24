@@ -156,7 +156,7 @@ func (db *Database) GetNodeDataWithPagination(limit, offset int, sortBy, sortOrd
 }
 
 // CreateNodeData creates new sensor data in the database
-func (db *Database) CreateNodeData(nodeData types.NodeData) error {
+func (db *Database) CreateNodeData(nodeData *types.NodeData) error {
 	switch db.dbType {
 	case InMemory:
 		// Find the last node data ID and assign the next ID
@@ -168,7 +168,7 @@ func (db *Database) CreateNodeData(nodeData types.NodeData) error {
 		}
 		nodeData.ID = lastID + 1
 		nodeData.Timestamp = time.Now()
-		InMemoryNodeData = append(InMemoryNodeData, nodeData)
+		InMemoryNodeData = append(InMemoryNodeData, *nodeData)
 		return nil
 	case Postgres:
 		// Create node data in Postgres database

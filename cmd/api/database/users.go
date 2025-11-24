@@ -109,7 +109,7 @@ func (db *Database) GetUsersWithPagination(limit, offset int, sortBy, sortOrder 
 }
 
 // CreateUser creates a new user in the database
-func (db *Database) CreateUser(user types.User) error {
+func (db *Database) CreateUser(user *types.User) error {
 	switch db.dbType {
 	case InMemory:
 		// Find the last user's ID and assign the next ID
@@ -124,7 +124,7 @@ func (db *Database) CreateUser(user types.User) error {
 		if user.Role == "" {
 			user.Role = types.RoleUser
 		}
-		InMemoryUsers = append(InMemoryUsers, user)
+		InMemoryUsers = append(InMemoryUsers, *user)
 		return nil
 	case Postgres:
 		// Create user in Postgres database
