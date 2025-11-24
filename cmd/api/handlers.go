@@ -39,7 +39,7 @@ func (c *serverConfig) HealthCheckHandler(w http.ResponseWriter, r *http.Request
 	err := c.writeResponseJSON(w, http.StatusOK, data, nil)
 	if err != nil {
 		c.logger.Error(err.Error())
-		http.Error(w, ERROR_INTERNAL, http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, ERROR_INTERNAL)
 	}
 }
 
@@ -59,17 +59,17 @@ func (c *serverConfig) HealthCheckHandler(w http.ResponseWriter, r *http.Request
 func (c *serverConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var user types.User
 	if err := c.readRequestJSON(w, r, &user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := database.ValidateUser(user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := c.db.CreateUser(user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -98,7 +98,7 @@ func (c *serverConfig) GetUsersHandler(w http.ResponseWriter, r *http.Request, p
 
 	users, err := c.db.GetUsersWithPagination(limit, offset, sortBy, sortOrder)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -128,14 +128,14 @@ func (c *serverConfig) GetUserHandler(w http.ResponseWriter, r *http.Request, ps
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 
 	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	user, err := c.db.GetUserByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		c.notFoundResponse(w, r)
 		return
 	}
 
@@ -163,27 +163,27 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 
 	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	currentUser, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 
 	var updatedUser types.User
 	if err := c.readRequestJSON(w, r, &updatedUser); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	// Prevent non-admin users from changing their role
 	existingUser, err := c.db.GetUserByID(id)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		c.notFoundResponse(w, r)
 		return
 	}
 
@@ -192,12 +192,12 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if err := database.ValidateUser(updatedUser); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 	updatedUser.UserID = id
 	if err := c.db.UpdateUser(id, updatedUser); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -217,14 +217,14 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 func (c *serverConfig) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 
 	// Get full user data from database
 	fullUser, err := c.db.GetUserByID(user.UserID)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		c.notFoundResponse(w, r)
 		return
 	}
 
@@ -251,11 +251,11 @@ func (c *serverConfig) DeleteUserHandler(w http.ResponseWriter, r *http.Request,
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 	if err := c.db.DeleteUser(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -277,17 +277,17 @@ func (c *serverConfig) DeleteUserHandler(w http.ResponseWriter, r *http.Request,
 func (c *serverConfig) CreateNodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var node types.Node
 	if err := c.readRequestJSON(w, r, &node); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := database.ValidateNode(node); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := c.db.CreateNode(node); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -316,7 +316,7 @@ func (c *serverConfig) GetNodesHandler(w http.ResponseWriter, r *http.Request, p
 
 	nodes, err := c.db.GetNodesWithPagination(limit, offset, sortBy, sortOrder)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -347,13 +347,13 @@ func (c *serverConfig) GetNodeHandler(w http.ResponseWriter, r *http.Request, ps
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 
 	node, err := c.db.GetNodeByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		c.notFoundResponse(w, r)
 		return
 	}
 
@@ -381,21 +381,21 @@ func (c *serverConfig) UpdateNodeHandler(w http.ResponseWriter, r *http.Request,
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 	var updatedNode types.Node
 	if err := c.readRequestJSON(w, r, &updatedNode); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 	if err := database.ValidateNode(updatedNode); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 	updatedNode.DeviceID = id
 	if err := c.db.UpdateNode(id, updatedNode); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -421,11 +421,11 @@ func (c *serverConfig) DeleteNodeHandler(w http.ResponseWriter, r *http.Request,
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 	if err := c.db.DeleteNode(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -447,13 +447,13 @@ func (c *serverConfig) DeleteNodeHandler(w http.ResponseWriter, r *http.Request,
 func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var nodeDataCreateRequest types.NodeDataCreateRequest
 	if err := c.readRequestJSON(w, r, &nodeDataCreateRequest); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	user, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 
@@ -465,12 +465,12 @@ func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := database.ValidateNodeData(nodeData); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := c.db.CreateNodeData(nodeData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -503,7 +503,7 @@ func (c *serverConfig) GetNodeDataHandler(w http.ResponseWriter, r *http.Request
 
 	nodeData, err := c.db.GetNodeDataWithPagination(limit, offset, sortBy, sortOrder)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	if len(nodeData) == 0 {
@@ -564,13 +564,13 @@ func (c *serverConfig) GetNodeDataByDeviceIDHandler(w http.ResponseWriter, r *ht
 	idStr := ps.ByName("deviceId")
 	deviceID, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid device ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid device ID format")
 		return
 	}
 
 	nodeData, err := c.db.GetNodeDataByDeviceID(deviceID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -600,14 +600,14 @@ func (c *serverConfig) GetNodeDataByUserIDHandler(w http.ResponseWriter, r *http
 	idStr := ps.ByName("userId")
 	userID, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid user ID format")
 		return
 	}
 
 	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	nodeData, err := c.db.GetNodeDataByUserID(userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -638,11 +638,11 @@ func (c *serverConfig) DeleteNodeDataHandler(w http.ResponseWriter, r *http.Requ
 	idStr := ps.ByName("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid ID format")
 		return
 	}
 	if err := c.db.DeleteNodeData(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -666,13 +666,13 @@ func (c *serverConfig) DeleteNodeDataHandler(w http.ResponseWriter, r *http.Requ
 func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var favorite_request types.NodeFavoriteCreateRequest
 	if err := c.readRequestJSON(w, r, &favorite_request); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	user, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 	// Cast this into a types.NodeFavorite type
@@ -682,12 +682,12 @@ func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.
 	}
 
 	if err := database.ValidateNodeFavorite(favorite); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := c.db.CreateNodeFavorite(favorite); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -708,7 +708,7 @@ func (c *serverConfig) CreateNodeFavoriteHandler(w http.ResponseWriter, r *http.
 func (c *serverConfig) GetNodeFavoritesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	favorites, err := c.db.GetNodeFavorites()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -739,14 +739,14 @@ func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r 
 	idStr := ps.ByName("userId")
 	userID, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid user ID format")
 		return
 	}
 
 	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	favorites, err := c.db.GetNodeFavoritesByUserID(userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 
@@ -776,7 +776,7 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 	// Extract the user ID and device ID from the URL parameters
 	user, ok := getUserFromContext(r)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "User not found in context")
 		return
 	}
 	userID := user.UserID
@@ -784,12 +784,12 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 
 	deviceID, err := strconv.Atoi(deviceIDStr)
 	if err != nil {
-		http.Error(w, "Invalid device ID format", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid device ID format")
 		return
 	}
 
 	if err := c.db.DeleteNodeFavorite(userID, deviceID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -811,27 +811,27 @@ func (c *serverConfig) DeleteNodeFavoriteHandler(w http.ResponseWriter, r *http.
 func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req types.UserCreateRequest
 	if err := c.readRequestJSON(w, r, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	// Validate input
 	if req.Username == "" || req.Password == "" || req.Email == "" {
-		http.Error(w, "Username, password, and email are required", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Username, password, and email are required")
 		return
 	}
 
 	// Check if user already exists
 	existingUser, _ := c.db.GetUserByUsername(req.Username)
 	if existingUser != nil {
-		http.Error(w, "Username already exists", http.StatusConflict)
+		c.conflictResponse(w, r, "Username already exists")
 		return
 	}
 
 	// Hash password
 	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to hash password")
 		return
 	}
 
@@ -844,26 +844,26 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 	}
 
 	if err := database.ValidateUser(user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	if err := c.db.CreateUser(user); err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to create user")
 		return
 	}
 
 	// Fetch the created user to get the correct user_id
 	createdUser, err := c.db.GetUserByUsername(req.Username)
 	if err != nil {
-		http.Error(w, "Failed to retrieve created user", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to retrieve created user")
 		return
 	}
 
 	// Generate JWT token
 	token, err := GenerateJWT(createdUser)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to generate token")
 		return
 	}
 
@@ -881,19 +881,19 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 
 	if from == "" || password == "" {
 		c.logger.Error("SMTP credentials missing: check SMTP_SENDER_EMAIL and SMTP_SENDER_PASSWORD env vars")
-		http.Error(w, "Email service not configured", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Email service not configured")
 		return
 	}
 
 	if _, err := mail.ParseAddress(from); err != nil {
 		c.logger.Error("invalid SMTP sender address", "address", from, "error", err)
-		http.Error(w, "Email service misconfigured", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Email service misconfigured")
 		return
 	}
 
 	if _, err := mail.ParseAddress(to); err != nil {
 		c.logger.Error("invalid recipient email address", "address", to, "error", err)
-		http.Error(w, "Invalid recipient email address", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Invalid recipient email address")
 		return
 	}
 
@@ -938,52 +938,52 @@ func (c *serverConfig) LoginHandler(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	if err := c.readRequestJSON(w, r, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
 	// Validate input
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		c.badRequestResponse(w, r, "Username and password are required")
 		return
 	}
 
 	// Get user by username
 	user, err := c.db.GetUserByUsername(req.Username)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "Invalid credentials")
 		return
 	}
 
 	// Decode stored password hash
 	storedHash, err := DecodePasswordHash(user.Password)
 	if err != nil {
-		http.Error(w, "Invalid stored password format", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Invalid stored password format")
 		return
 	}
 
 	// Verify password
 	isValid, err := VerifyPassword(req.Password, storedHash)
 	if err != nil {
-		http.Error(w, "Failed to verify password", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to verify password")
 		return
 	}
 
 	if !isValid {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "Invalid credentials")
 		return
 	}
 
 	// Check if user is verified
 	if !user.IsVerified {
-		http.Error(w, "Account not verified. Please verify your account first.", http.StatusForbidden)
+		c.forbiddenResponse(w, r, "Account not verified. Please verify your account first.")
 		return
 	}
 
 	// Generate JWT token
 	token, err := GenerateJWT(user)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to generate token")
 		return
 	}
 
@@ -1068,7 +1068,7 @@ func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps 
 	// Get user from context (requireAuth middleware has already validated the token)
 	var verificationRequest types.UserVerifyRequest
 	if err := c.readRequestJSON(w, r, &verificationRequest); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.badRequestResponse(w, r, err.Error())
 		return
 	}
 
@@ -1077,13 +1077,13 @@ func (c *serverConfig) VerifyHandler(w http.ResponseWriter, r *http.Request, ps 
 	// Parse and validate the token
 	user, err := GetUserIDFromJWT(tokenString)
 	if err != nil {
-		http.Error(w, "Invalid or expired token: "+err.Error(), http.StatusUnauthorized)
+		c.unauthorizedResponse(w, r, "Invalid or expired token: "+err.Error())
 		return
 	}
 
 	// Verify the user in the database
 	if err := c.db.VerifyUser(user); err != nil {
-		http.Error(w, "Failed to verify user: "+err.Error(), http.StatusInternalServerError)
+		c.internalServerErrorResponse(w, r, "Failed to verify user: "+err.Error())
 		return
 	}
 
