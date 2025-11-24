@@ -20,7 +20,7 @@ func InitTestUsers(config *serverConfig) error {
 		Role:       types.RoleAdmin,
 	}
 
-	if err := config.db.CreateUser(adminUser); err != nil {
+	if err := config.db.CreateUser(&adminUser); err != nil {
 		return fmt.Errorf("failed to create admin user: %w", err)
 	}
 
@@ -37,7 +37,7 @@ func InitTestUsers(config *serverConfig) error {
 		Role:       types.RoleUser,
 	}
 
-	if err := config.db.CreateUser(regularUser); err != nil {
+	if err := config.db.CreateUser(&regularUser); err != nil {
 		return fmt.Errorf("failed to create regular user: %w", err)
 	}
 

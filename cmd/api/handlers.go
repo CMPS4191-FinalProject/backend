@@ -68,7 +68,7 @@ func (c *serverConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if err := c.db.CreateUser(user); err != nil {
+	if err := c.db.CreateUser(&user); err != nil {
 		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
@@ -286,7 +286,7 @@ func (c *serverConfig) CreateNodeHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if err := c.db.CreateNode(node); err != nil {
+	if err := c.db.CreateNode(&node); err != nil {
 		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
@@ -469,7 +469,7 @@ func (c *serverConfig) CreateNodeDataHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := c.db.CreateNodeData(nodeData); err != nil {
+	if err := c.db.CreateNodeData(&nodeData); err != nil {
 		c.internalServerErrorResponse(w, r, err.Error())
 		return
 	}
@@ -848,20 +848,14 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	if err := c.db.CreateUser(user); err != nil {
+	if err := c.db.CreateUser(&user); err != nil {
 		c.internalServerErrorResponse(w, r, "Failed to create user")
 		return
 	}
 
-	// Fetch the created user to get the correct user_id
-	createdUser, err := c.db.GetUserByUsername(req.Username)
-	if err != nil {
-		c.internalServerErrorResponse(w, r, "Failed to retrieve created user")
-		return
-	}
-
-	// Generate JWT token
-	token, err := GenerateJWT(createdUser)
+	// Now user.UserID should be set by CreateUser
+	// Generate verification token
+	token, err := GenerateJWT(&user)
 	if err != nil {
 		c.internalServerErrorResponse(w, r, "Failed to generate token")
 		return
