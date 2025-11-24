@@ -45,6 +45,20 @@ definitions:
     - password
     - username
     type: object
+  main.MessageLogEntry:
+    properties:
+      data: {}
+      message:
+        type: string
+      timestamp:
+        type: string
+      type:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
   main.NodeDataItem:
     properties:
       device_id:
@@ -164,6 +178,8 @@ definitions:
     properties:
       is_verified:
         type: boolean
+      role:
+        $ref: '#/definitions/types.UserRole'
       user_id:
         type: integer
       username:
@@ -178,6 +194,14 @@ definitions:
       username:
         type: string
     type: object
+  types.UserRole:
+    enum:
+    - user
+    - admin
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleAdmin
   types.UserUpdateRequest:
     properties:
       password:
@@ -508,6 +532,59 @@ paths:
       summary: Health check endpoint
       tags:
       - health
+  /metrics:
+    get:
+      consumes:
+      - application/json
+      description: Get real-time WebSocket metrics (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get WebSocket metrics
+      tags:
+      - metrics
+  /metrics/messages:
+    get:
+      consumes:
+      - application/json
+      description: Get recent WebSocket messages (admin only, hawk-eye view)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.MessageLogEntry'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get WebSocket message log
+      tags:
+      - metrics
   /nodedata:
     get:
       consumes:
@@ -623,44 +700,6 @@ paths:
       security:
       - Bearer: []
       summary: Delete sensor data
-      tags:
-      - nodedata
-    get:
-      consumes:
-      - application/json
-      description: Get a specific sensor reading by its ID
-      parameters:
-      - description: Node Data ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.NodeDataResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/main.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.ErrorResponse'
-      security:
-      - Bearer: []
-      summary: Get sensor data by ID
       tags:
       - nodedata
   /nodedata/device/{deviceId}:
