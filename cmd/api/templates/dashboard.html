@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Dashboard - Soil Quality Monitor</title>
+    <title>Metrics Dashboard - Soil Quality Monitor</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"></script>
     <style>
@@ -82,10 +82,10 @@
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">
-                    Admin Dashboard
+                    Metrics Dashboard
                 </h1>
                 <h2 class="subtitle">
-                    Real-time WebSocket Monitoring
+                    WebSocket Monitoring
                 </h2>
                 <div id="userInfo" style="display: none;">
                     <p>Logged in as: <strong id="currentUser"></strong> (<span id="currentRole"></span>)</p>
@@ -119,14 +119,11 @@
                 </div>
             </div>
 
-            <!-- Message Log (Hawk-eye View) -->
+            <!-- Message Log (Admin) -->
             <div class="box" id="hawkEyeSection" style="display: none;">
                 <h2 class="title is-4">
                     <span class="icon-text">
-                        <span class="icon">
-                            <i class="fas fa-eye"></i>
-                        </span>
-                        <span>Hawk-eye View - Recent WebSocket Messages</span>
+                        <span>Admin View - Recent WebSocket Messages</span>
                     </span>
                 </h2>
                 <div class="message-log" id="messageLog">
