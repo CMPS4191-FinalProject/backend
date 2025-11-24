@@ -1,7 +1,13 @@
-DB_TYPE=POSTGRES
-export DB_DSN="postgres://postgres:postgres@localhost/soilapp?sslmode=disable"
-API_VERSION="v1"
-ENVIRONMENT="development"
-PORT="4000"
-CORS_ALLOW_CREDENTIALS=true
-CORS_ALLOWED_ORIGINS="https://www.google.com, http://www.google.com, http://localhost:9000, http://localhost:5173"
+export DB_TYPE=POSTGRES
+export DB_DSN=postgres://postgres:postgres@localhost/soilapp?sslmode=disable
+export API_VERSION=v1
+export ENVIRONMENT=development
+export HTTPS_ENABLED=true
+export PORT=4000
+export CORS_ALLOW_CREDENTIALS=true
+export CORS_ALLOWED_ORIGINS=https://www.google.com, http://www.google.com, http://localhost:9000, http://localhost:4000, http://localhost:5173, https://sma.alexdev404.localplayer.dev
+export SMTP_HOST=<YOUR_HOST>
+export SMTP_PORT=587
+export SMTP_SENDER_USERNAME=<YOUR_USERNAME>
+export SMTP_SENDER_EMAIL=<YOUR_EMAIL_ADDRESS>
+export SMTP_SENDER_PASSWORD=<YOUR_PASSWORD>
