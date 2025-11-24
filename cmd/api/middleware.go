@@ -39,8 +39,8 @@ func getRateLimiter(ip string) *types.RateLimiter {
 		rateLimiterMutex.Lock()
 		// Double-check after acquiring write lock
 		if limiter, exists = globalRateLimiters[ip]; !exists {
-			// 10 requests per minute (refill rate: 10/60 = 0.167 tokens per second)
-			limiter = NewRateLimiter(10, 10.0/60.0)
+			// 100 requests per minute (refill rate: 100/60 = 1.67 tokens per second)
+			limiter = NewRateLimiter(100, 100.0/60.0)
 			globalRateLimiters[ip] = limiter
 		}
 		rateLimiterMutex.Unlock()
@@ -266,7 +266,6 @@ func (c *serverConfig) adminMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "User not found in context", http.StatusUnauthorized)
 			return
 		}
-
 		// Check if user is admin
 		if user.Role != types.RoleAdmin {
 			http.Error(w, "Admin access required", http.StatusForbidden)
