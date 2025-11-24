@@ -27,12 +27,12 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.POST(v("/auth/verify"), c.requireAuth(c.VerifyHandler)) // Verify account
 
 	// Users (protected routes)
-	c.router.GET(v("/auth/me"), c.requireAuth(c.GetCurrentUserHandler))    // Get current user
-	c.router.POST(v("/users"), c.requireAdmin(c.CreateUserHandler))        // Create user (admin only)
-	c.router.GET(v("/users"), c.requireAdmin(c.GetUsersHandler))           // List users (admin only)
-	c.router.GET(v("/users/:id"), c.requireAuth(c.GetUserHandler))         // Get user by ID (self or admin)
-	c.router.PUT(v("/users/:id"), c.requireAuth(c.UpdateUserHandler))      // Update user (self or admin)
-	c.router.DELETE(v("/users/:id"), c.requireAdmin(c.DeleteUserHandler))  // Delete user (admin only)
+	c.router.GET(v("/auth/me"), c.requireAuth(c.GetCurrentUserHandler))              // Get current user
+	c.router.POST(v("/users"), c.requireAdmin(c.CreateUserHandler))                  // Create user (admin only)
+	c.router.GET(v("/users"), c.requireAdmin(c.GetUsersHandler))                     // List users (admin only)
+	c.router.GET(v("/users/:id"), c.requireOwnerOrAdmin(c.GetUserHandler))           // Get user by ID (self or admin)
+	c.router.PUT(v("/users/:id"), c.requireOwnerOrAdmin(c.UpdateUserHandler))        // Update user (self or admin)
+	c.router.DELETE(v("/users/:id"), c.requireAdmin(c.DeleteUserHandler))            // Delete user (admin only)
 
 	// Nodes (IoT devices) - protected routes
 	c.router.POST(v("/nodes"), c.requireAuth(c.CreateNodeHandler))       // Create node
@@ -42,23 +42,23 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.DELETE(v("/nodes/:id"), c.requireAuth(c.DeleteNodeHandler)) // Delete node
 
 	// Node Data (sensor readings) - protected routes
-	c.router.POST(v("/nodedata"), c.requireAuth(c.CreateNodeDataHandler))                        // Create sensor reading
-	c.router.GET(v("/nodedata"), c.requireAuth(c.GetNodeDataHandler))                            // List all sensor data
-	c.router.GET(v("/nodedata/device/:deviceId"), c.requireAuth(c.GetNodeDataByDeviceIDHandler)) // Get data by device
-	c.router.GET(v("/nodedata/user/:userId"), c.requireAuth(c.GetNodeDataByUserIDHandler))       // Get data by user
-	c.router.DELETE(v("/nodedata/device/:deviceId"), c.requireAuth(c.DeleteNodeDataHandler))     // Delete sensor data
+	c.router.POST(v("/nodedata"), c.requireAuth(c.CreateNodeDataHandler))                                      // Create sensor reading
+	c.router.GET(v("/nodedata"), c.requireAuth(c.GetNodeDataHandler))                                          // List all sensor data
+	c.router.GET(v("/nodedata/device/:deviceId"), c.requireAuth(c.GetNodeDataByDeviceIDHandler))               // Get data by device
+	c.router.GET(v("/nodedata/user/:userId"), c.requireOwnerOrAdmin(c.GetNodeDataByUserIDHandler))             // Get data by user (owner or admin)
+	c.router.DELETE(v("/nodedata/device/:deviceId"), c.requireAuth(c.DeleteNodeDataHandler))                   // Delete sensor data
 
 	// Node Favorites - protected routes
-	c.router.POST(v("/favorites"), c.requireAuth(c.CreateNodeFavoriteHandler))                   // Add favorite
-	c.router.GET(v("/favorites"), c.requireAuth(c.GetNodeFavoritesHandler))                      // List all favorites
-	c.router.GET(v("/favorites/user/:userId"), c.requireAuth(c.GetNodeFavoritesByUserIDHandler)) // Get user's favorites
-	c.router.DELETE(v("/favorites/:deviceId"), c.requireAuth(c.DeleteNodeFavoriteHandler))       // Remove favorite
+	c.router.POST(v("/favorites"), c.requireAuth(c.CreateNodeFavoriteHandler))                                 // Add favorite
+	c.router.GET(v("/favorites"), c.requireAuth(c.GetNodeFavoritesHandler))                                    // List all favorites
+	c.router.GET(v("/favorites/user/:userId"), c.requireOwnerOrAdmin(c.GetNodeFavoritesByUserIDHandler))       // Get user's favorites (owner or admin)
+	c.router.DELETE(v("/favorites/:deviceId"), c.requireAuth(c.DeleteNodeFavoriteHandler))                     // Remove favorite
 
 	// WebSocket faucet endpoint (protected)
 	c.router.GET(v("/faucet"), c.requireAuth(c.FaucetHandler))
 
-	// Metrics endpoints (admin only)
-	c.router.GET(v("/metrics"), c.requireAdmin(c.GetMetricsHandler))
+	// Metrics endpoints (metrics available to all authenticated users, messages admin only)
+	c.router.GET(v("/metrics"), c.requireAuth(c.GetMetricsHandler))
 	c.router.GET(v("/metrics/messages"), c.requireAdmin(c.GetMessageLogHandler))
 
 	// Dashboard routes (static HTML served with authentication check)

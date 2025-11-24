@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"qotd/cmd/api/database"
@@ -418,12 +419,11 @@ func (h *Hub) logMessage(msg FaucetMessage) {
 	h.messageLogMu.Lock()
 	defer h.messageLogMu.Unlock()
 
-	// Get username from database
+	// Username should already be included in the message if available
+	// No need to query database here for performance reasons
 	username := ""
 	if msg.UserID > 0 {
-		if user, err := h.db.GetUserByID(msg.UserID); err == nil {
-			username = user.Username
-		}
+		username = fmt.Sprintf("User %d", msg.UserID)
 	}
 
 	entry := MessageLogEntry{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"qotd/cmd/api/types"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -232,40 +233,84 @@ func (c *serverConfig) requireAuth(handler func(http.ResponseWriter, *http.Reque
 	}
 }
 
-// requireAdmin is a wrapper that requires admin role
+// requireAdmin is a wrapper that requires admin role (role check done in middleware)
 func (c *serverConfig) requireAdmin(handler func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		// Apply auth middleware first
-		authHandler := c.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Check if user is admin
-			user, ok := getUserFromContext(r)
-			if !ok {
-				http.Error(w, "User not found in context", http.StatusUnauthorized)
-				return
-			}
-
-			if user.Role != types.RoleAdmin {
-				http.Error(w, "Admin access required", http.StatusForbidden)
-				return
-			}
-
+		// Apply auth middleware first, then admin check middleware
+		authHandler := c.authMiddleware(c.adminMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handler(w, r, ps)
-		}))
+		})))
 
 		authHandler.ServeHTTP(w, r)
 	}
 }
 
-// requireOwnerOrAdmin checks if the user is either the owner of the resource or an admin
+// requireOwnerOrAdmin checks if the user is either the owner of the resource or an admin (role check in middleware)
 func (c *serverConfig) requireOwnerOrAdmin(handler func(http.ResponseWriter, *http.Request, httprouter.Params)) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		// Apply auth middleware first
-		authHandler := c.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Apply auth middleware first, then ownership check middleware
+		authHandler := c.authMiddleware(c.ownerOrAdminMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handler(w, r, ps)
-		}))
+		}), ps))
 
 		authHandler.ServeHTTP(w, r)
 	}
+}
+
+// adminMiddleware checks if the authenticated user has admin role
+func (c *serverConfig) adminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get user from context (set by authMiddleware)
+		user, ok := getUserFromContext(r)
+		if !ok {
+			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			return
+		}
+
+		// Check if user is admin
+		if user.Role != types.RoleAdmin {
+			http.Error(w, "Admin access required", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ownerOrAdminMiddleware checks if the user is the owner of the resource or an admin
+func (c *serverConfig) ownerOrAdminMiddleware(next http.Handler, ps httprouter.Params) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get user from context (set by authMiddleware)
+		user, ok := getUserFromContext(r)
+		if !ok {
+			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract resource owner ID from URL parameters
+		// This works for routes like /users/:id, /nodedata/user/:userId, etc.
+		var resourceOwnerID int
+		var err error
+
+		if idStr := ps.ByName("id"); idStr != "" {
+			resourceOwnerID, err = strconv.Atoi(idStr)
+		} else if userIDStr := ps.ByName("userId"); userIDStr != "" {
+			resourceOwnerID, err = strconv.Atoi(userIDStr)
+		}
+
+		if err != nil {
+			http.Error(w, "Invalid ID format", http.StatusBadRequest)
+			return
+		}
+
+		// Allow if user is admin or if they're accessing their own resource
+		if user.Role != types.RoleAdmin && user.UserID != resourceOwnerID {
+			http.Error(w, "Access denied: you can only access your own resources", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // getUserFromContext extracts user claims from request context

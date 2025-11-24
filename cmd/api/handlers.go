@@ -132,18 +132,7 @@ func (c *serverConfig) GetUserHandler(w http.ResponseWriter, r *http.Request, ps
 		return
 	}
 
-	// Check authorization: users can only view themselves, admins can view anyone
-	currentUser, ok := getUserFromContext(r)
-	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
-		return
-	}
-
-	if currentUser.Role != types.RoleAdmin && currentUser.UserID != id {
-		http.Error(w, "Access denied: you can only view your own profile", http.StatusForbidden)
-		return
-	}
-
+	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	user, err := c.db.GetUserByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -178,15 +167,10 @@ func (c *serverConfig) UpdateUserHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	// Check authorization: users can only update themselves, admins can update anyone
+	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	currentUser, ok := getUserFromContext(r)
 	if !ok {
 		http.Error(w, "User not found in context", http.StatusUnauthorized)
-		return
-	}
-
-	if currentUser.Role != types.RoleAdmin && currentUser.UserID != id {
-		http.Error(w, "Access denied: you can only update your own profile", http.StatusForbidden)
 		return
 	}
 
@@ -620,18 +604,7 @@ func (c *serverConfig) GetNodeDataByUserIDHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Check authorization: users can only view their own data, admins can view anyone's
-	currentUser, ok := getUserFromContext(r)
-	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
-		return
-	}
-
-	if currentUser.Role != types.RoleAdmin && currentUser.UserID != userID {
-		http.Error(w, "Access denied: you can only view your own data", http.StatusForbidden)
-		return
-	}
-
+	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	nodeData, err := c.db.GetNodeDataByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -770,18 +743,7 @@ func (c *serverConfig) GetNodeFavoritesByUserIDHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	// Check authorization: users can only view their own favorites, admins can view anyone's
-	currentUser, ok := getUserFromContext(r)
-	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
-		return
-	}
-
-	if currentUser.Role != types.RoleAdmin && currentUser.UserID != userID {
-		http.Error(w, "Access denied: you can only view your own favorites", http.StatusForbidden)
-		return
-	}
-
+	// Authorization is handled by middleware (requireOwnerOrAdmin)
 	favorites, err := c.db.GetNodeFavoritesByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
