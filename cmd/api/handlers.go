@@ -824,7 +824,7 @@ func (c *serverConfig) RegisterHandler(w http.ResponseWriter, r *http.Request, p
 	// Check if user already exists
 	existingUser, _ := c.db.GetUserByUsername(req.Username)
 	if existingUser != nil {
-		c.errorResponse(w, r, http.StatusConflict, "Username already exists")
+		c.conflictResponse(w, r, "Username already exists")
 		return
 	}
 

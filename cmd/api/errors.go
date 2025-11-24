@@ -44,3 +44,7 @@ func (c *serverConfig) internalServerErrorResponse(w http.ResponseWriter, r *htt
 func (c *serverConfig) tooManyRequestsResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
 	c.errorResponse(w, r, http.StatusTooManyRequests, message)
 }
+
+func (c *serverConfig) conflictResponse(w http.ResponseWriter, r *http.Request, message interface{}) {
+	c.errorResponse(w, r, http.StatusConflict, message)
+}
