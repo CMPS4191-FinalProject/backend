@@ -1132,3 +1132,216 @@ func (c *serverConfig) DashboardHandler(w http.ResponseWriter, r *http.Request, 
 func (c *serverConfig) DashboardLoginHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }
+
+// GetSoilMoistureForecastHandler godoc
+// @Summary Get soil moisture forecast
+// @Description Fetch soil moisture forecast from Open-Meteo API (free, no key required)
+// @Tags openmeteo
+// @Accept json
+// @Produce json
+// @Param lat query number true "Latitude"
+// @Param lon query number true "Longitude"
+// @Param days query int false "Forecast days (1-16, default 7)"
+// @Success 200 {object} SoilMoistureData
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security Bearer
+// @Router /forecast/soil [get]
+func (c *serverConfig) GetSoilMoistureForecastHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Parse coordinates
+	latStr := r.URL.Query().Get("lat")
+	lonStr := r.URL.Query().Get("lon")
+	daysStr := r.URL.Query().Get("days")
+
+	if latStr == "" || lonStr == "" {
+		c.badRequestResponse(w, r, "Missing required parameters: lat and lon")
+		return
+	}
+
+	var lat, lon float64
+	if _, err := fmt.Sscanf(latStr, "%f", &lat); err != nil {
+		c.badRequestResponse(w, r, "Invalid latitude value")
+		return
+	}
+	if _, err := fmt.Sscanf(lonStr, "%f", &lon); err != nil {
+		c.badRequestResponse(w, r, "Invalid longitude value")
+		return
+	}
+
+	// Validate coordinates
+	if lat < -90 || lat > 90 {
+		c.badRequestResponse(w, r, "Latitude must be between -90 and 90")
+		return
+	}
+	if lon < -180 || lon > 180 {
+		c.badRequestResponse(w, r, "Longitude must be between -180 and 180")
+		return
+	}
+
+	days := 7
+	if daysStr != "" {
+		fmt.Sscanf(daysStr, "%d", &days)
+	}
+
+	forecast, err := c.openMeteoService.GetSoilMoistureForecast(lat, lon, days)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+		return
+	}
+
+	err = c.writeResponseJSON(w, http.StatusOK, envelope{"forecast": forecast}, nil)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+	}
+}
+
+// GetWeatherForecastHandler godoc
+// @Summary Get weather and soil temperature forecast
+// @Description Fetch weather and soil temperature forecast from Open-Meteo API (free, no key required)
+// @Tags openmeteo
+// @Accept json
+// @Produce json
+// @Param lat query number true "Latitude"
+// @Param lon query number true "Longitude"
+// @Param days query int false "Forecast days (1-16, default 7)"
+// @Success 200 {object} WeatherForecast
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security Bearer
+// @Router /forecast/weather [get]
+func (c *serverConfig) GetWeatherForecastHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Parse coordinates
+	latStr := r.URL.Query().Get("lat")
+	lonStr := r.URL.Query().Get("lon")
+	daysStr := r.URL.Query().Get("days")
+
+	if latStr == "" || lonStr == "" {
+		c.badRequestResponse(w, r, "Missing required parameters: lat and lon")
+		return
+	}
+
+	var lat, lon float64
+	if _, err := fmt.Sscanf(latStr, "%f", &lat); err != nil {
+		c.badRequestResponse(w, r, "Invalid latitude value")
+		return
+	}
+	if _, err := fmt.Sscanf(lonStr, "%f", &lon); err != nil {
+		c.badRequestResponse(w, r, "Invalid longitude value")
+		return
+	}
+
+	// Validate coordinates
+	if lat < -90 || lat > 90 {
+		c.badRequestResponse(w, r, "Latitude must be between -90 and 90")
+		return
+	}
+	if lon < -180 || lon > 180 {
+		c.badRequestResponse(w, r, "Longitude must be between -180 and 180")
+		return
+	}
+
+	days := 7
+	if daysStr != "" {
+		fmt.Sscanf(daysStr, "%d", &days)
+	}
+
+	forecast, err := c.openMeteoService.GetWeatherForecast(lat, lon, days)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+		return
+	}
+
+	err = c.writeResponseJSON(w, http.StatusOK, envelope{"forecast": forecast}, nil)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+	}
+}
+
+// CompareSensorWithForecastHandler godoc
+// @Summary Compare sensor data with forecast
+// @Description Compare device sensor readings with Open-Meteo soil moisture forecast
+// @Tags openmeteo
+// @Accept json
+// @Produce json
+// @Param device_id query int true "Device ID"
+// @Param lat query number true "Latitude"
+// @Param lon query number true "Longitude"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security Bearer
+// @Router /forecast/compare [get]
+func (c *serverConfig) CompareSensorWithForecastHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Parse device ID
+	deviceIDStr := r.URL.Query().Get("device_id")
+	if deviceIDStr == "" {
+		c.badRequestResponse(w, r, "Missing required parameter: device_id")
+		return
+	}
+
+	var deviceID int
+	if _, err := fmt.Sscanf(deviceIDStr, "%d", &deviceID); err != nil {
+		c.badRequestResponse(w, r, "Invalid device_id")
+		return
+	}
+
+	// Parse coordinates
+	latStr := r.URL.Query().Get("lat")
+	lonStr := r.URL.Query().Get("lon")
+
+	if latStr == "" || lonStr == "" {
+		c.badRequestResponse(w, r, "Missing required parameters: lat and lon")
+		return
+	}
+
+	var lat, lon float64
+	if _, err := fmt.Sscanf(latStr, "%f", &lat); err != nil {
+		c.badRequestResponse(w, r, "Invalid latitude value")
+		return
+	}
+	if _, err := fmt.Sscanf(lonStr, "%f", &lon); err != nil {
+		c.badRequestResponse(w, r, "Invalid longitude value")
+		return
+	}
+
+	// Get latest moisture reading for the device
+	nodeData, err := c.db.GetNodeDataByDeviceID(deviceID)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+		return
+	}
+
+	if len(nodeData) == 0 {
+		c.notFoundResponse(w, r)
+		return
+	}
+
+	// Find the most recent reading
+	latestReading := nodeData[0]
+	for _, reading := range nodeData {
+		if reading.Timestamp.After(latestReading.Timestamp) {
+			latestReading = reading
+		}
+	}
+
+	if latestReading.MoistureContent == nil {
+		c.badRequestResponse(w, r, "No moisture data available for device")
+		return
+	}
+
+	// Convert percentage to m³/m³ (divide by 100)
+	deviceMoisture := *latestReading.MoistureContent / 100.0
+
+	comparison, err := c.openMeteoService.CompareSensorWithForecast(deviceMoisture, lat, lon)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+		return
+	}
+
+	err = c.writeResponseJSON(w, http.StatusOK, envelope{"comparison": comparison}, nil)
+	if err != nil {
+		c.internalServerErrorResponse(w, r, err.Error())
+	}
+}
+

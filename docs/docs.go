@@ -474,6 +474,221 @@ const docTemplate = `{
                 }
             }
         },
+        "/forecast/compare": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Compare device sensor readings with Open-Meteo soil moisture forecast",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "openmeteo"
+                ],
+                "summary": "Compare sensor data with forecast",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/forecast/soil": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Fetch soil moisture forecast from Open-Meteo API (free, no key required)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "openmeteo"
+                ],
+                "summary": "Get soil moisture forecast",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Forecast days (1-16, default 7)",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SoilMoistureData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/forecast/weather": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Fetch weather and soil temperature forecast from Open-Meteo API (free, no key required)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "openmeteo"
+                ],
+                "summary": "Get weather and soil temperature forecast",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "Latitude",
+                        "name": "lat",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Longitude",
+                        "name": "lon",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Forecast days (1-16, default 7)",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.WeatherForecast"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/healthcheck": {
             "get": {
                 "description": "Get the health status of the API",
@@ -1729,6 +1944,56 @@ const docTemplate = `{
                 }
             }
         },
+        "main.SoilMoistureData": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "soil_moisture_0_to_1cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_moisture_1_to_3cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_moisture_27_to_81cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_moisture_3_to_9cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_moisture_9_to_27cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "time": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
         "main.UserResponse": {
             "type": "object",
             "properties": {
@@ -1739,6 +2004,56 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "john_doe"
+                }
+            }
+        },
+        "main.WeatherForecast": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "precipitation": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "relative_humidity_2m": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_temperature_0cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "soil_temperature_6cm": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "temperature_2m": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "time": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timezone": {
+                    "type": "string"
                 }
             }
         },

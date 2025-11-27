@@ -174,6 +174,92 @@
             </p>
           </div>
         </div>
+
+        <!-- Node Forecast Comparison (Admin) -->
+        <div class="box" id="forecastSection" style="display: none">
+          <h2 class="title is-4">
+            <span class="icon-text">
+              <span class="icon">
+                <i class="fas fa-cloud-sun"></i>
+              </span>
+              <span>Node Forecast Comparison</span>
+            </span>
+          </h2>
+          <div class="notification is-info is-light">
+            <p>Compare sensor readings with professional weather forecasts from Open-Meteo API.</p>
+          </div>
+
+          <div class="columns">
+            <div class="column is-one-third">
+              <div class="field">
+                <label class="label">Select Node</label>
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select id="nodeSelect">
+                      <option value="">Loading nodes...</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label">Latitude</label>
+                <div class="control">
+                  <input
+                    class="input"
+                    type="number"
+                    id="latitude"
+                    placeholder="e.g., 40.7128"
+                    step="0.0001"
+                    min="-90"
+                    max="90"
+                  />
+                </div>
+                <p class="help">Enter latitude between -90 and 90</p>
+              </div>
+
+              <div class="field">
+                <label class="label">Longitude</label>
+                <div class="control">
+                  <input
+                    class="input"
+                    type="number"
+                    id="longitude"
+                    placeholder="e.g., -74.0060"
+                    step="0.0001"
+                    min="-180"
+                    max="180"
+                  />
+                </div>
+                <p class="help">Enter longitude between -180 and 180</p>
+              </div>
+
+              <div class="field">
+                <div class="control">
+                  <button class="button is-primary is-fullwidth" onclick="compareForecast()">
+                    <span class="icon">
+                      <i class="fas fa-chart-line"></i>
+                    </span>
+                    <span>Compare with Forecast</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="column">
+              <div id="forecastResults" style="display: none">
+                <h3 class="title is-5">Comparison Results</h3>
+                <div id="forecastContent"></div>
+              </div>
+              <div id="forecastPlaceholder" class="has-text-centered has-text-grey-light" style="padding: 3rem;">
+                <p class="icon is-large">
+                  <i class="fas fa-3x fa-cloud-sun-rain"></i>
+                </p>
+                <p style="margin-block-start: 1rem;">Select a node and enter coordinates to compare sensor data with forecast</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -208,6 +294,8 @@
 
             if (isAdmin) {
               document.getElementById("hawkEyeSection").style.display = "block";
+              document.getElementById("forecastSection").style.display = "block";
+              loadNodes(); // Load nodes for forecast comparison
             } else {
               document.getElementById("userSection").style.display = "block";
             }
@@ -375,6 +463,168 @@
             login();
           }
         });
+
+      // Load nodes for forecast comparison
+      async function loadNodes() {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/${API_VERSION}/nodes`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const nodes = await response.json();
+            const select = document.getElementById("nodeSelect");
+            
+            if (!nodes || nodes.length === 0) {
+              select.innerHTML = '<option value="">No nodes available</option>';
+            } else {
+              select.innerHTML = '<option value="">Select a node...</option>' +
+                nodes.map(node => 
+                  `<option value="${node.device_id}">Node #${node.device_id} - ${node.status}</option>`
+                ).join("");
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load nodes:", error);
+        }
+      }
+
+      // Compare forecast with sensor data
+      async function compareForecast() {
+        const token = localStorage.getItem("token");
+        const nodeId = document.getElementById("nodeSelect").value;
+        const latitude = document.getElementById("latitude").value;
+        const longitude = document.getElementById("longitude").value;
+
+        // Validate inputs
+        if (!nodeId) {
+          alert("Please select a node");
+          return;
+        }
+        if (!latitude || !longitude) {
+          alert("Please enter both latitude and longitude");
+          return;
+        }
+
+        const lat = parseFloat(latitude);
+        const lon = parseFloat(longitude);
+
+        if (lat < -90 || lat > 90) {
+          alert("Latitude must be between -90 and 90");
+          return;
+        }
+        if (lon < -180 || lon > 180) {
+          alert("Longitude must be between -180 and 180");
+          return;
+        }
+
+        // Show loading state
+        const resultsDiv = document.getElementById("forecastResults");
+        const contentDiv = document.getElementById("forecastContent");
+        const placeholderDiv = document.getElementById("forecastPlaceholder");
+        
+        placeholderDiv.style.display = "none";
+        resultsDiv.style.display = "block";
+        contentDiv.innerHTML = '<div class="has-text-centered"><span class="icon"><i class="fas fa-spinner fa-pulse"></i></span> Loading comparison...</div>';
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/${API_VERSION}/forecast/compare?device_id=${nodeId}&lat=${lat}&lon=${lon}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            displayForecastComparison(data.comparison);
+          } else {
+            const error = await response.text();
+            contentDiv.innerHTML = `<div class="notification is-danger">${error}</div>`;
+          }
+        } catch (error) {
+          contentDiv.innerHTML = `<div class="notification is-danger">Error: ${error.message}</div>`;
+        }
+      }
+
+      // Display forecast comparison results
+      function displayForecastComparison(comparison) {
+        const contentDiv = document.getElementById("forecastContent");
+        
+        const deviceMoisture = (comparison.device_moisture * 100).toFixed(2);
+        const forecastMoisture = (comparison.forecast_moisture * 100).toFixed(2);
+        const difference = (comparison.difference * 100).toFixed(2);
+        const percentDiff = comparison.percent_difference.toFixed(1);
+        
+        let diffClass = "is-info";
+        let diffIcon = "fa-equals";
+        if (percentDiff > 20) {
+          diffClass = "is-warning";
+          diffIcon = "fa-arrow-up";
+        } else if (percentDiff < -20) {
+          diffClass = "is-danger";
+          diffIcon = "fa-arrow-down";
+        }
+
+        const forecastTime = new Date(comparison.forecast_time).toLocaleString();
+        const insights = comparison.insights || [];
+
+        contentDiv.innerHTML = `
+          <div class="columns">
+            <div class="column">
+              <div class="notification is-light">
+                <p class="heading">Device Moisture</p>
+                <p class="title">${deviceMoisture}%</p>
+              </div>
+            </div>
+            <div class="column">
+              <div class="notification is-light">
+                <p class="heading">Forecast Moisture</p>
+                <p class="title">${forecastMoisture}%</p>
+              </div>
+            </div>
+            <div class="column">
+              <div class="notification ${diffClass} is-light">
+                <p class="heading">Difference</p>
+                <p class="title">
+                  <span class="icon">
+                    <i class="fas ${diffIcon}"></i>
+                  </span>
+                  ${percentDiff}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="notification is-info is-light">
+            <p class="heading">Forecast Time</p>
+            <p>${forecastTime}</p>
+          </div>
+
+          <div class="notification is-light">
+            <p class="heading">Location</p>
+            <p>Latitude: ${comparison.location.latitude.toFixed(4)}, Longitude: ${comparison.location.longitude.toFixed(4)}</p>
+          </div>
+
+          ${insights.length > 0 ? `
+            <div class="notification is-primary is-light">
+              <p class="heading"><strong>Insights & Recommendations</strong></p>
+              <div class="content">
+                <ul>
+                  ${insights.map(insight => `<li>${insight}</li>`).join("")}
+                </ul>
+              </div>
+            </div>
+          ` : ''}
+        `;
+      }
 
       // Initialize dashboard
       async function init() {
