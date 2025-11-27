@@ -61,6 +61,11 @@ func (c *serverConfig) routes() http.Handler {
 	c.router.GET(v("/metrics"), c.requireAuth(c.GetMetricsHandler))
 	c.router.GET(v("/metrics/messages"), c.requireAdmin(c.GetMessageLogHandler))
 
+	// Open-Meteo API integration (free weather and soil data, no API key required)
+	c.router.GET(v("/forecast/soil"), c.requireAuth(c.GetSoilMoistureForecastHandler))     // Get soil moisture forecast
+	c.router.GET(v("/forecast/weather"), c.requireAuth(c.GetWeatherForecastHandler))       // Get weather forecast
+	c.router.GET(v("/forecast/compare"), c.requireAuth(c.CompareSensorWithForecastHandler)) // Compare sensor with forecast
+
 	// Dashboard routes (static HTML served with authentication check)
 	c.router.GET("/dashboard", c.DashboardHandler)
 	c.router.GET("/dashboard/login", c.DashboardLoginHandler)

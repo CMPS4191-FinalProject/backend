@@ -17,12 +17,13 @@ import (
 )
 
 type serverConfig struct {
-	port    int
-	env     string
-	logger  *slog.Logger
-	version string
-	db      *database.Database
-	router  *httprouter.Router
+	port            int
+	env             string
+	logger          *slog.Logger
+	version         string
+	db              *database.Database
+	router          *httprouter.Router
+	openMeteoService *OpenMeteoService
 }
 
 // @title           Soil Quality Monitor API
@@ -89,6 +90,10 @@ func main() {
 	// Create a logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	config.logger = logger
+
+	// Initialize Open-Meteo service (free weather and soil API, no key required)
+	config.openMeteoService = NewOpenMeteoService(logger)
+	logger.Info("Open-Meteo service initialized (free weather and soil data API)")
 
 	fmt.Println("Listening on port " + fmt.Sprint(config.port))
 	fmt.Println("Environment: " + config.env)

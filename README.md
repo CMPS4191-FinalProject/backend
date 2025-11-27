@@ -240,6 +240,52 @@ curl -X GET http://localhost:4000/v1/metrics/messages \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+### Weather and Soil Forecasts (Open-Meteo Integration)
+
+The API integrates with Open-Meteo, a free weather and soil data API that requires no API key. This allows you to:
+- Get soil moisture forecasts for any location
+- Compare sensor readings with forecast data
+- Get weather forecasts including soil temperature
+
+#### Get soil moisture forecast
+```bash
+curl -X GET "http://localhost:4000/v1/forecast/soil?lat=40.7128&lon=-74.0060&days=7" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Parameters:**
+- `lat` - Latitude (required)
+- `lon` - Longitude (required)
+- `days` - Forecast days, 1-16 (optional, default: 7)
+
+**Response:** Hourly soil moisture forecast at different depths (0-1cm, 1-3cm, 3-9cm, 9-27cm, 27-81cm)
+
+#### Get weather forecast
+```bash
+curl -X GET "http://localhost:4000/v1/forecast/weather?lat=40.7128&lon=-74.0060&days=3" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Parameters:**
+- `lat` - Latitude (required)
+- `lon` - Longitude (required)
+- `days` - Forecast days, 1-16 (optional, default: 7)
+
+**Response:** Hourly weather forecast including temperature, humidity, precipitation, and soil temperature
+
+#### Compare sensor data with forecast
+```bash
+curl -X GET "http://localhost:4000/v1/forecast/compare?device_id=1&lat=40.7128&lon=-74.0060" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Parameters:**
+- `device_id` - Your device ID (required)
+- `lat` - Latitude of the device location (required)
+- `lon` - Longitude of the device location (required)
+
+**Response:** Comparison of your sensor readings with forecast data, including insights and recommendations
+
 ## Environment Variables
 
 Configure the application using environment variables (see `.envrc.example`):
@@ -248,3 +294,20 @@ Configure the application using environment variables (see `.envrc.example`):
 - `API_VERSION` - API version prefix (default: v1)
 - `DB_TYPE` - Database type (IN_MEMORY or POSTGRES)
 - `DB_DSN` - PostgreSQL connection string (required if DB_TYPE=POSTGRES)
+
+## Third-Party Integrations
+
+### Open-Meteo API (Free Weather and Soil Data)
+
+The application integrates with [Open-Meteo](https://open-meteo.com/), a free and open-source weather API that provides:
+- **No API key required** - Completely free to use
+- Soil moisture forecasts at multiple depths
+- Weather forecasts (temperature, humidity, precipitation)
+- Soil temperature data
+- Hourly forecasts up to 16 days
+
+This integration allows users to:
+1. Compare their IoT sensor readings with professional weather forecasts
+2. Get insights on irrigation timing based on upcoming weather
+3. Validate sensor accuracy against forecast data
+4. Plan watering schedules based on precipitation forecasts
