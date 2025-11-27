@@ -185,7 +185,12 @@ func (oms *OpenMeteoService) CompareSensorWithForecast(deviceMoisture float64, l
 
 	// Calculate difference
 	difference := deviceMoisture - forecastMoisture
-	percentDiff := (difference / forecastMoisture) * 100
+	var percentDiff float64
+	if forecastMoisture > 0.001 { // Avoid division by zero
+		percentDiff = (difference / forecastMoisture) * 100
+	} else {
+		percentDiff = 0 // If forecast is near zero, can't calculate percentage
+	}
 
 	insights := []string{}
 	
