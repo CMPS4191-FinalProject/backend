@@ -2,6 +2,15 @@
 
 A simple Go API that pulls data from an IoT device and returns the soil moisture content of them
 
+## Features
+
+- **Real-time Soil Monitoring**: Monitor soil moisture levels from IoT devices
+- **User Authentication**: Secure JWT-based authentication system
+- **WebSocket Support**: Real-time data updates
+- **Weather Integration**: Free weather and soil forecasts via Open-Meteo API
+- **Sensor Validation**: Compare your sensor readings with professional forecasts
+- **Comprehensive API**: Full REST API with Swagger documentation
+
 ## How to Run
 
 1. Make sure you have Go installed (https://golang.org/dl/)
@@ -309,5 +318,43 @@ The application integrates with [Open-Meteo](https://open-meteo.com/), a free an
 This integration allows users to:
 1. Compare their IoT sensor readings with professional weather forecasts
 2. Get insights on irrigation timing based on upcoming weather
+3. Validate sensor accuracy against forecast data
+4. Plan watering schedules based on precipitation forecasts
+
+#### Example Use Case
+
+Monitor your garden in New York City and compare with forecast data:
+
+```bash
+# 1. Login and get your token
+TOKEN=$(curl -s -X POST http://localhost:4000/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | jq -r .token)
+
+# 2. Create a monitoring node
+curl -X POST http://localhost:4000/v1/nodes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"ONLINE"}'
+
+# 3. Add sensor data (45.5% moisture)
+curl -X POST http://localhost:4000/v1/nodedata \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"device_id":1,"moisture_content":45.5}'
+
+# 4. Get weather forecast for your location (NYC)
+curl -X GET "http://localhost:4000/v1/forecast/weather?lat=40.7128&lon=-74.0060&days=3" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Compare your sensor with professional forecast
+curl -X GET "http://localhost:4000/v1/forecast/compare?device_id=1&lat=40.7128&lon=-74.0060" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The comparison will provide insights like:
+- Whether your sensor reads higher/lower than forecast
+- Upcoming moisture trends (increasing/decreasing)
+- Irrigation recommendations based on forecast data
 3. Validate sensor accuracy against forecast data
 4. Plan watering schedules based on precipitation forecasts
