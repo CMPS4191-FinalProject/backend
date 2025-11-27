@@ -155,7 +155,7 @@ func (db *Database) GetNodeByID(deviceID int) (*types.Node, error) {
 	case Postgres:
 		// Fetch node by ID from Postgres database
 		query := `
-			SELECT device_id, status
+			SELECT device_id, status, status_details
 			FROM "Nodes"
 			WHERE device_id = $1
 		`
@@ -163,7 +163,7 @@ func (db *Database) GetNodeByID(deviceID int) (*types.Node, error) {
 		defer cancel()
 
 		var n types.Node
-		err := db.context.QueryRowContext(ctx, query, deviceID).Scan(&n.DeviceID, &n.Status)
+		err := db.context.QueryRowContext(ctx, query, deviceID).Scan(&n.DeviceID, &n.Status, &n.StatusDetails)
 		if err != nil {
 			return nil, err
 		}
