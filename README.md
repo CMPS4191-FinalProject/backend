@@ -1,3 +1,7 @@
+![Image 2025-11-28 at 8 52 10 AM](https://github.com/user-attachments/assets/5d5b826d-775b-4516-9f95-ca70af6182aa)
+![Image 2025-11-28 at 8 51 34 AM](https://github.com/user-attachments/assets/cd6345a4-4a7b-4705-85a7-1a66dcf5a463)
+
+
 # Really basic soil moisture monitor API
 
 A simple Go API that pulls data from an IoT device and returns the soil moisture content of them
